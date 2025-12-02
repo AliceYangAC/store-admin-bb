@@ -21,6 +21,7 @@ import TopNav from './components/TopNav.vue';
 const productServiceUrl = "/products/";
 const singleProductServiceUrl = "/product/";
 const makelineServiceUrl = "/makeline/";
+const shippingServiceUrl = "/ship/";
 
 export default {
   name: 'App',
@@ -32,6 +33,7 @@ export default {
       orders: [],
       products: [],
       product: {},
+      polling: null
     }
   },
   mounted() {
@@ -39,7 +41,7 @@ export default {
     this.fetchOrders();
     this.polling = setInterval(() => {
       this.fetchOrders();
-    }, 5000);
+    }, 2000);
   },
   beforeUnmount() {
     clearInterval(this.polling);
@@ -49,168 +51,118 @@ export default {
       if (!imagePath || imagePath === '/placeholder.png') return '/placeholder.png';
       if (imagePath.startsWith('http')) return imagePath;
 
-      // Use the variable we defined at the top
       let baseUrl = productServiceUrl; 
-      
-      // Clean up double slashes
       if (baseUrl.endsWith('/') && imagePath.startsWith('/')) {
         baseUrl = baseUrl.slice(0, -1);
       }
       return `${baseUrl}${imagePath}`;
     },
-    async addProductsToList(newProduct) {
-      this.products.push(newProduct);
-    },
-    async updateProductInList(updatedProduct) {
-      const index = this.products.findIndex(product => product.id === updatedProduct.id);
-      if (index !== -1) {
-        this.products[index] = updatedProduct;
-      }
-    },
-    async getProduct(id) {
-      fetch(`${singleProductServiceUrl}${id}`)
-        .then(response => response.json())
-        .then(product => {
-          this.product = { ...product };
-          this.product.image = this.resolveImageUrl(product.image);
-        })
-        .catch(error => {
-          console.log(error);
-          alert('Error occurred while fetching product');
-        });
-    },
-    async getProducts() {
-      fetch(`${productServiceUrl}`) 
-        .then(response => response.json())
-        .then(products => {
-          this.products = products.map(p => ({
-            ...p,
-            image: this.resolveImageUrl(p.image)
-          }));
-        })
-        .catch(error => {
-          console.log(error);
-          alert('Error occurred while fetching products');
-        });
-    },
-      async fetchOrders() {
-        await fetch(`${makelineServiceUrl}order/fetch`)
+    async fetchOrders() {
+      await fetch(`${makelineServiceUrl}order/fetch`)
         .then(response => response.json())
         .then(incomingOrders => {
-          console.log(incomingOrders);
-          
           if (incomingOrders) {
-            // MERGE LOGIC:
-            // Map over the new list from the server
             this.orders = incomingOrders.map(newOrder => {
-              // Check if we already have this order in memory
-            const existingOrder = this.orders.find(o => o.orderId === newOrder.orderId);
-            if (existingOrder && existingOrder.deliveryTime) {
-              newOrder.deliveryTime = existingOrder.deliveryTime;
-            }
-            
-            return newOrder;
-          });
-        } else {
-          console.log('No orders from server');
-          this.orders = [];
-        }
-      })
-      .catch(error => console.error(error));
+              const existingOrder = this.orders.find(o => o.orderId === newOrder.orderId);
+              if (newOrder.shippingDuration) {
+                newOrder.deliveryTime = newOrder.shippingDuration * 1000; 
+              } 
+              else if (existingOrder && existingOrder.deliveryTime) {
+                newOrder.deliveryTime = existingOrder.deliveryTime;
+              }
+              return newOrder;
+            });
+          } else {
+            this.orders = [];
+          }
+        })
+        .catch(error => console.error(error));
     },
+    async shipOrder(orderId) {
+      let order = this.orders.find(o => o.orderId === orderId);
+      if (!order) return;
+
+      // CHANGE 1: Format the payload to match Go's 'ShippingRequest' struct
+      const payload = {
+        orderId: order.orderId,
+        shipping: {
+            postalCode: order.shipping.zip || order.shipping.postalCode || "K1A 0B1", 
+            address1: order.shipping.address1,
+            city: order.shipping.city
+        },
+        status: 2
+      };
+
+  await fetch(`${shippingServiceUrl}ship`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  .then(res => {
+      if (res.ok) {
+          order.status = 2; 
+          alert(`Order ${orderId} has been queued for shipping!`);
+      } else {
+          alert("Failed to queue shipment. Check Shipping Service.");
+      }
+  })
+  .catch(err => console.error("Shipping Error:", err));
+},
     async completeOrder(orderId) {
       await this.updateOrderStatus(orderId, 1);
       alert('Order processed successfully');
     },
-    async shipOrder(orderId) {
-      // update status to 2 (Shipped) 
-      await this.updateOrderStatus(orderId, 2);
-      alert('Order Shipped!');
 
-      // calculate random duration
-      const min = 10000;
-      const max = 30000;
-      const duration = Math.floor(Math.random() * (max - min + 1)) + min;
-
-      // update local order state
-      const order = this.orders.find(o => o.orderId === orderId);
-      if (order) {
-        order.status = 2;
-        // save the duration to the order object
-        order.deliveryTime = duration; 
-      }
-
-      // set timeout matching the calculated duration
-      setTimeout(async () => {
-        console.log(`Mocking delivery for Order ${orderId}...`);
-        await this.updateOrderStatus(orderId, 3);
-        
-        if(order) order.status = 3; 
-        
-        alert(`Order ${orderId} has been Delivered!`);
-      }, duration); 
-    },
     async cancelOrder(orderId) {
-      await fetch(`${makelineServiceUrl}order/${orderId}`, {
-        method: 'DELETE',
-      })
-      .then(response => {
-         if (response.ok) {
+      await fetch(`${makelineServiceUrl}order/${orderId}`, { method: 'DELETE' })
+      .then(res => {
+         if (res.ok) {
             this.orders = this.orders.filter(o => o.orderId !== orderId);
-            // Use router to go back to list if we are on the detail page
-            if (this.$route.path.includes(`/order/${orderId}`)) {
-                this.$router.push('/'); 
-            }
-            alert('Order cancelled successfully');
-         } else {
-             alert('Failed to cancel order');
+            if (this.$route.path.includes(`/order/${orderId}`)) this.$router.push('/'); 
+            alert('Order cancelled');
          }
-      })
-      .catch(err => console.error(err));
+      });
     },
 
-    // 4. Update Order Items (Used when removing items)
     async updateOrder({ orderId, items }) {
       let order = this.orders.find(o => o.orderId === orderId);
       if (!order) return;
-      
-      // Optimistically update local state
       order.items = items;
-      
-      // Send full update to backend
       await fetch(`${makelineServiceUrl}order`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(order)
-      })
-      .then(res => {
-          if(res.ok) alert('Order updated');
-          else alert('Failed to update order');
-      })
-      .catch(err => console.error(err));
+      });
     },
 
-    // Helper: Generic Status Updater
     async updateOrderStatus(orderId, status) {
       let order = this.orders.find(o => o.orderId === orderId);
       if (!order) return;
-      
-      // Create a copy with the new status
       const updatedOrder = { ...order, status: status };
-
       await fetch(`${makelineServiceUrl}order`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedOrder)
-      })
-      .then(response => {
-        if (response.ok) {
-            order.status = status; // Update local state on success
-        } else {
-            console.error('Failed to update status on backend');
-        }
-      })
-      .catch(err => console.error('Failed to update status', err));
+      }).then(res => {
+        if(res.ok) order.status = status;
+      });
+    },
+
+    // ... (Keep Product methods unchanged) ...
+    async addProductsToList(newProduct) { this.products.push(newProduct); },
+    async updateProductInList(updatedProduct) {
+       const index = this.products.findIndex(p => p.id === updatedProduct.id);
+       if (index !== -1) this.products[index] = updatedProduct;
+    },
+    async getProduct(id) {
+       fetch(`${singleProductServiceUrl}${id}`).then(r => r.json()).then(p => {
+         this.product = {...p, image: this.resolveImageUrl(p.image)};
+       });
+    },
+    async getProducts() {
+       fetch(`${productServiceUrl}`).then(r => r.json()).then(p => {
+         this.products = p.map(x => ({...x, image: this.resolveImageUrl(x.image)}));
+       });
     }
   }
 }

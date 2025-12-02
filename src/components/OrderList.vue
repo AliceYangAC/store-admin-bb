@@ -47,24 +47,25 @@
 
                 <template v-else-if="order.status === 2">
                   <div class="delivery-widget">
+                    <div class="route-info">
+                      <span class="from">Ottawa</span>
+                      <span class="arrow">➜</span>
+                      <span class="to">{{ order.shipping.city || 'Customer' }}</span>
+                    </div>
                     <div class="progress-track">
-                      
                       <div 
                         class="progress-fill" 
-                        :style="{ animationDuration: (order.deliveryTime || 10000) + 'ms' }"
+                        :style="{ animationDuration: (order.deliveryTime || 0) + 'ms' }"
                       ></div>
-                      
+
                       <div 
                         class="car-icon"
-                        :style="{ animationDuration: (order.deliveryTime || 10000) + 'ms' }"
+                        :style="{ animationDuration: (order.deliveryTime || 0) + 'ms' }"
                       >
-                        <svg viewBox="0 0 24 24" width="24" height="24" fill="#0046be">
-                          <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
-                        </svg>
-                      </div>
+                        </div>
 
-                    </div>
-                    <span class="status-text">On its way...</span>
+                      </div>
+                      <span class="status-text">{{ (order.deliveryTime / 1000).toFixed(0) }}s delivery...</span>
                   </div>
                 </template>
 
@@ -368,6 +369,32 @@ a {
   font-size: 0.75rem;
   color: #666;
   font-style: italic;
+  text-align: right;
+}
+
+/* Add to OrderList.vue <style> */
+
+.route-info {
+  font-size: 0.75rem;
+  color: #555;
+  margin-bottom: 2px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 500;
+}
+
+.arrow {
+  color: #0046be; /* Brand blue */
+  font-size: 0.9rem;
+  padding: 0 4px;
+}
+
+.to {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 65px; /* Truncate very long city names */
   text-align: right;
 }
 

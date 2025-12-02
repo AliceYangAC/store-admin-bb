@@ -24,8 +24,8 @@
       </tr>
 
       <tr>
-        <td><label for="product-tags">Keywords</label></td>
-        <td><input id="product-tags" placeholder="Product Keywords" v-model="product.tags" /></td>
+        <td><label for="product-category">Category</label></td>
+        <td><input id="product-category" placeholder="Product Category" v-model="product.category" /></td>
         <td></td>
       </tr>
 
@@ -35,22 +35,22 @@
           <textarea rows="8" id="product-description" placeholder="Product Description" v-model="product.description" />
           <input type="hidden" id="product-id" placeholder="Product ID" v-model="product.id" />
         </td>
-        <td>
+        <!-- <td>
           <button @click="generateDescription" class="ai-button" v-show="aiCapabilities.includes('description')">Ask AI Assistant</button>
-        </td>
+        </td> -->
       </tr>
 
       <tr>
         <td><label for="product-image">Image</label></td>
-        <td>
+        <!-- <td>
           <input id="product-image-text" placeholder="Product Image" v-model="product.image" v-show="!aiCapabilities.includes('image')"/>
           <div id="product-image-container" class="image-container" :class="{ loading: isLoadingImage }" style="display: flex; align-items: center;" v-show="aiCapabilities.includes('image')">
             <img v-if="product.image" :src="product.image" alt="Product Image" />
             <div class="overlay">{{ overlayText }}</div>
           </div>
-        </td>
+        </td> -->
         <td>
-          <button id="product-image-btn" @click="generateImage" class="ai-button" v-show="aiCapabilities.includes('image')">Generate Image</button>
+          <!-- <button id="product-image-btn" @click="generateImage" class="ai-button" v-show="aiCapabilities.includes('image')">Generate Image</button> -->
         </td>
       </tr>
     </table>

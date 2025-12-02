@@ -9,6 +9,9 @@
     @updateProductInList="updateProductInList"
     @getProduct="getProduct"
     @getProducts="getProducts"
+    @cancelOrder="cancelOrder"
+    @shipOrder="shipOrder"
+    @updateOrder="updateOrder"
   ></router-view>
 </template>
 
@@ -28,90 +31,188 @@ export default {
     return {
       orders: [],
       products: [],
-      product: {}
+      product: {},
     }
   },
   mounted() {
     this.getProducts();
+    this.fetchOrders();
+    this.polling = setInterval(() => {
+      this.fetchOrders();
+    }, 5000);
+  },
+  beforeUnmount() {
+    clearInterval(this.polling);
   },
   methods: {
+    resolveImageUrl(imagePath) {
+      if (!imagePath || imagePath === '/placeholder.png') return '/placeholder.png';
+      if (imagePath.startsWith('http')) return imagePath;
+
+      // Use the variable we defined at the top
+      let baseUrl = productServiceUrl; 
+      
+      // Clean up double slashes
+      if (baseUrl.endsWith('/') && imagePath.startsWith('/')) {
+        baseUrl = baseUrl.slice(0, -1);
+      }
+      return `${baseUrl}${imagePath}`;
+    },
     async addProductsToList(newProduct) {
       this.products.push(newProduct);
     },
     async updateProductInList(updatedProduct) {
       const index = this.products.findIndex(product => product.id === updatedProduct.id);
-      this.products[index] = updatedProduct;
+      if (index !== -1) {
+        this.products[index] = updatedProduct;
+      }
     },
     async getProduct(id) {
       fetch(`${singleProductServiceUrl}${id}`)
         .then(response => response.json())
         .then(product => {
-          this.product.id = product.id
-          this.product.name = product.name
-          this.product.image = product.image
-          this.product.description = product.description
-          this.product.price = product.price
+          this.product = { ...product };
+          this.product.image = this.resolveImageUrl(product.image);
         })
         .catch(error => {
-          console.log(error)
-          alert('Error occurred while fetching product')
-        })
+          console.log(error);
+          alert('Error occurred while fetching product');
+        });
     },
     async getProducts() {
-      fetch(`${productServiceUrl}`)
+      fetch(`${productServiceUrl}`) 
         .then(response => response.json())
         .then(products => {
-          this.products = products
+          this.products = products.map(p => ({
+            ...p,
+            image: this.resolveImageUrl(p.image)
+          }));
         })
         .catch(error => {
-          console.log(error)
-          alert('Error occurred while fetching products')
-        })
+          console.log(error);
+          alert('Error occurred while fetching products');
+        });
     },
-    async fetchOrders() {
-      await fetch(`${makelineServiceUrl}order/fetch`)
+      async fetchOrders() {
+        await fetch(`${makelineServiceUrl}order/fetch`)
         .then(response => response.json())
-        .then(data => {
-          console.log(data)
-          if (data) {
-            this.orders = data;
-          } else {
-            console.log('No orders from server');
-          }
-        })
-        .catch(error => console.error(error));
+        .then(incomingOrders => {
+          console.log(incomingOrders);
+          
+          if (incomingOrders) {
+            // MERGE LOGIC:
+            // Map over the new list from the server
+            this.orders = incomingOrders.map(newOrder => {
+              // Check if we already have this order in memory
+            const existingOrder = this.orders.find(o => o.orderId === newOrder.orderId);
+            if (existingOrder && existingOrder.deliveryTime) {
+              newOrder.deliveryTime = existingOrder.deliveryTime;
+            }
+            
+            return newOrder;
+          });
+        } else {
+          console.log('No orders from server');
+          this.orders = [];
+        }
+      })
+      .catch(error => console.error(error));
     },
-    async completeOrder(orderId) {      
-      // get the order and update the status
-      let order = this.orders.find(order => order.orderId === orderId);
-      order.status = 1;
+    async completeOrder(orderId) {
+      await this.updateOrderStatus(orderId, 1);
+      alert('Order processed successfully');
+    },
+    async shipOrder(orderId) {
+      // update status to 2 (Shipped) 
+      await this.updateOrderStatus(orderId, 2);
+      alert('Order Shipped!');
 
-      let orderObject = JSON.stringify(order)
-      console.log(orderObject);
+      // calculate random duration
+      const min = 10000;
+      const max = 30000;
+      const duration = Math.floor(Math.random() * (max - min + 1)) + min;
+
+      // update local order state
+      const order = this.orders.find(o => o.orderId === orderId);
+      if (order) {
+        order.status = 2;
+        // save the duration to the order object
+        order.deliveryTime = duration; 
+      }
+
+      // set timeout matching the calculated duration
+      setTimeout(async () => {
+        console.log(`Mocking delivery for Order ${orderId}...`);
+        await this.updateOrderStatus(orderId, 3);
+        
+        if(order) order.status = 3; 
+        
+        alert(`Order ${orderId} has been Delivered!`);
+      }, duration); 
+    },
+    async cancelOrder(orderId) {
+      await fetch(`${makelineServiceUrl}order/${orderId}`, {
+        method: 'DELETE',
+      })
+      .then(response => {
+         if (response.ok) {
+            this.orders = this.orders.filter(o => o.orderId !== orderId);
+            // Use router to go back to list if we are on the detail page
+            if (this.$route.path.includes(`/order/${orderId}`)) {
+                this.$router.push('/'); 
+            }
+            alert('Order cancelled successfully');
+         } else {
+             alert('Failed to cancel order');
+         }
+      })
+      .catch(err => console.error(err));
+    },
+
+    // 4. Update Order Items (Used when removing items)
+    async updateOrder({ orderId, items }) {
+      let order = this.orders.find(o => o.orderId === orderId);
+      if (!order) return;
+      
+      // Optimistically update local state
+      order.items = items;
+      
+      // Send full update to backend
+      await fetch(`${makelineServiceUrl}order`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(order)
+      })
+      .then(res => {
+          if(res.ok) alert('Order updated');
+          else alert('Failed to update order');
+      })
+      .catch(err => console.error(err));
+    },
+
+    // Helper: Generic Status Updater
+    async updateOrderStatus(orderId, status) {
+      let order = this.orders.find(o => o.orderId === orderId);
+      if (!order) return;
+      
+      // Create a copy with the new status
+      const updatedOrder = { ...order, status: status };
 
       await fetch(`${makelineServiceUrl}order`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: orderObject
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedOrder)
       })
-        .then(response => {
-          if (!response.ok) {
-            alert('Error occurred while processing order')
-          } else {
-            alert('Order successfully processed')
-            // remove the order from the list
-            this.orders = this.orders.filter(order => order.orderId !== orderId);
-            this.$router.go(-1);
-          }
-        })
-        .catch(error => {
-          console.log(error)
-          alert('Error occurred while processing order')
-        })
+      .then(response => {
+        if (response.ok) {
+            order.status = status; // Update local state on success
+        } else {
+            console.error('Failed to update status on backend');
+        }
+      })
+      .catch(err => console.error('Failed to update status', err));
     }
-  },
+  }
 }
 </script>
 

@@ -57,6 +57,7 @@ export default {
       }
       return `${baseUrl}${imagePath}`;
     },
+
     async fetchOrders() {
       await fetch(`${makelineServiceUrl}order/fetch`)
         .then(response => response.json())
@@ -64,12 +65,20 @@ export default {
           if (incomingOrders) {
             this.orders = incomingOrders.map(newOrder => {
               const existingOrder = this.orders.find(o => o.orderId === newOrder.orderId);
-              if (newOrder.shippingDuration) {
-                newOrder.deliveryTime = newOrder.shippingDuration * 1000; 
+              
+              // REFACTOR: Standardize on 'duration' (seconds)
+              // We check both keys just in case the DB field name varies
+              const incomingDuration = newOrder.duration || newOrder.shippingDuration;
+
+              if (incomingDuration) {
+                // Pass seconds directly. OrderList.vue handles the *1000 conversion.
+                newOrder.duration = incomingDuration; 
               } 
-              else if (existingOrder && existingOrder.deliveryTime) {
-                newOrder.deliveryTime = existingOrder.deliveryTime;
+              else if (existingOrder && existingOrder.duration) {
+                // Keep local state to prevent UI flickering between polls
+                newOrder.duration = existingOrder.duration;
               }
+
               return newOrder;
             });
           } else {
@@ -78,36 +87,37 @@ export default {
         })
         .catch(error => console.error(error));
     },
+
     async shipOrder(orderId) {
       let order = this.orders.find(o => o.orderId === orderId);
       if (!order) return;
 
-      // CHANGE 1: Format the payload to match Go's 'ShippingRequest' struct
       const payload = {
-        orderId: order.orderId,
+        orderId: String(order.orderId), // Ensure ID is string for Go
         shipping: {
             postalCode: order.shipping.zip || order.shipping.postalCode || "K1A 0B1", 
             address1: order.shipping.address1,
             city: order.shipping.city
         },
-        status: 2
+        status: 2 // Int for Go
       };
 
-  await fetch(`${shippingServiceUrl}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  })
-  .then(res => {
-      if (res.ok) {
-          order.status = 2; 
-          alert(`Order ${orderId} has been queued for shipping!`);
-      } else {
-          alert("Failed to queue shipment. Check Shipping Service.");
-      }
-  })
-  .catch(err => console.error("Shipping Error:", err));
-},
+      await fetch(`${shippingServiceUrl}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(res => {
+          if (res.ok) {
+              order.status = 2; 
+              alert(`Order ${orderId} has been queued for shipping!`);
+          } else {
+              alert("Failed to queue shipment. Check Shipping Service.");
+          }
+      })
+      .catch(err => console.error("Shipping Error:", err));
+    },
+
     async completeOrder(orderId) {
       await this.updateOrderStatus(orderId, 1);
       alert('Order processed successfully');
@@ -148,7 +158,7 @@ export default {
       });
     },
 
-    // ... (Keep Product methods unchanged) ...
+    // ... (Product methods unchanged) ...
     async addProductsToList(newProduct) { this.products.push(newProduct); },
     async updateProductInList(updatedProduct) {
        const index = this.products.findIndex(p => p.id === updatedProduct.id);
@@ -169,6 +179,7 @@ export default {
 </script>
 
 <style>
+/* ... (Keep your styles unchanged) ... */
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;

@@ -55,17 +55,17 @@
                     <div class="progress-track">
                       <div 
                         class="progress-fill" 
-                        :style="{ animationDuration: (order.deliveryTime || 0) + 'ms' }"
+                        :style="{ animationDuration: ((order.duration || 0) * 1000) + 'ms' }"
                       ></div>
 
                       <div 
                         class="car-icon"
-                        :style="{ animationDuration: (order.deliveryTime || 0) + 'ms' }"
+                        :style="{ animationDuration: ((order.duration || 0) * 1000) + 'ms' }"
                       >
                         </div>
 
                       </div>
-                      <span class="status-text">{{ (order.deliveryTime / 1000).toFixed(0) }}s delivery...</span>
+                      <span class="status-text">{{ (order.duration || 0).toFixed(0) }}s delivery...</span>
                   </div>
                 </template>
 

@@ -57,70 +57,66 @@ export default {
       }
       return `${baseUrl}${imagePath}`;
     },
-async fetchOrders() {
-        await fetch(`${makelineServiceUrl}order/fetch`)
-            .then(response => response.json())
-            .then(incomingOrders => {
-                if (incomingOrders) {
-                    this.orders = incomingOrders.map(newOrder => {
-                        const existingOrder = this.orders.find(o => o.orderId === newOrder.orderId);
+    async fetchOrders() {
+      await fetch(`${makelineServiceUrl}order/fetch`)
+      .then(response => response.json())
+      .then(incomingOrders => {
+          if (incomingOrders) {
+              this.orders = incomingOrders.map(newOrder => {
+                  const existingOrder = this.orders.find(o => o.orderId === newOrder.orderId);
 
-                        let duration = 0;
-                        let shippedAt = null; // Store timestamp to calculate progress
+                  let duration = 0;
+                  let shippedAt = null; 
 
-                        // 1. Get incoming duration and timestamp (from the nested 'shipping' object)
-                        if (newOrder.shipping) {
-                            duration = newOrder.shipping.duration || 0;
-                            shippedAt = newOrder.shipping.shippedAt;
-                        }
-                        
-                        // 2. Fallback to Existing Local Duration
-                        if (duration === 0 && existingOrder && existingOrder.duration) {
-                            duration = existingOrder.duration;
-                        }
+                  if (newOrder.shipping) {
+                      duration = newOrder.shipping.duration || 0;
+                      shippedAt = newOrder.shipping.shippedAt;
+                  }
+                  
+                  if (duration === 0 && existingOrder && existingOrder.duration) {
+                      duration = existingOrder.duration;
+                  }
+                  // Calculate progress if order is shipped
+                  if (duration > 0 && shippedAt) {
+                      const totalDeliveryTimeMs = duration * 1000;
+                      
+                      // Calculate time passed since shipment started
+                      const startTime = new Date(shippedAt).getTime();
+                      const now = Date.now();
+                      const timePassedMs = now - startTime;
 
-                        // 3. CALCULATE PROGRESS AND TIME LEFT
-                        if (duration > 0 && shippedAt) {
-                            const totalDeliveryTimeMs = duration * 1000;
-                            
-                            // Calculate time passed since shipment started
-                            const startTime = new Date(shippedAt).getTime();
-                            const now = Date.now();
-                            const timePassedMs = now - startTime;
+                      // If the shipment is still active
+                      if (timePassedMs < totalDeliveryTimeMs) {
+                          newOrder.duration = duration; // Keep total duration in seconds for display
+                          
+                          // Calculate the percentage passed (0 to 100)
+                          const progressPercent = (timePassedMs / totalDeliveryTimeMs) * 100;
+                          
+                          // Store fields required for smooth animation start
+                          newOrder.progressPercent = Math.min(progressPercent, 100);
+                          newOrder.totalDurationMs = totalDeliveryTimeMs;
+                          newOrder.remainingDurationMs = totalDeliveryTimeMs - timePassedMs;
+                      } else {
+                          // Delivery should be complete if status hasn't updated yet
+                          newOrder.progressPercent = 100;
+                          newOrder.duration = 0;
+                          newOrder.totalDurationMs = 0;
+                          newOrder.remainingDurationMs = 0;
+                      }
+                  } else {
+                      newOrder.duration = duration;
+                      newOrder.progressPercent = 0;
+                      newOrder.totalDurationMs = duration * 1000; // Use if status is 2 but shippedAt is missing
+                  }
 
-                            // If the shipment is still active
-                            if (timePassedMs < totalDeliveryTimeMs) {
-                                newOrder.duration = duration; // Keep total duration in seconds for display
-                                
-                                // Calculate the percentage passed (0 to 100)
-                                const progressPercent = (timePassedMs / totalDeliveryTimeMs) * 100;
-                                
-                                // Store fields required for smooth animation start
-                                newOrder.progressPercent = Math.min(progressPercent, 100);
-                                newOrder.totalDurationMs = totalDeliveryTimeMs;
-                                newOrder.remainingDurationMs = totalDeliveryTimeMs - timePassedMs;
-                            } else {
-                                // Delivery should be complete if status hasn't updated yet
-                                newOrder.progressPercent = 100;
-                                newOrder.duration = 0;
-                                newOrder.totalDurationMs = 0;
-                                newOrder.remainingDurationMs = 0;
-                            }
-                        } else {
-                            newOrder.duration = duration;
-                            newOrder.progressPercent = 0;
-                            newOrder.totalDurationMs = duration * 1000; // Use if status is 2 but shippedAt is missing
-                        }
-
-                        return newOrder;
-                    });
-                } else {
-                    this.orders = [];
-                }
-            })
-            .catch(error => console.error(error));
-          },
-
+                  return newOrder;
+              });
+          } else {
+              this.orders = [];
+          }
+      })
+      .catch(error => console.error(error));
+    },
     async shipOrder(orderId) {
       let order = this.orders.find(o => o.orderId === orderId);
       if (!order) return;

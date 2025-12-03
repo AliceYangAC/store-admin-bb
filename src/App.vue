@@ -187,8 +187,6 @@ export default {
         if(res.ok) order.status = status;
       });
     },
-
-    // ... (Product methods unchanged) ...
     async addProductsToList(newProduct) { this.products.push(newProduct); },
     async updateProductInList(updatedProduct) {
        const index = this.products.findIndex(p => p.id === updatedProduct.id);

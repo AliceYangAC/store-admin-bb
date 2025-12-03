@@ -61,7 +61,7 @@
                           // 2. Set the starting position (e.g., starts at 40% complete)
                           width: (order.progressPercent || 0) + '%', 
                           // 3. Set a delay so the animation only starts running for the remaining time
-                          animationDelay: (order.totalDurationMs ? -order.totalDurationMs * (order.progressPercent / 100) : 0) + 'ms'
+                          // animationDelay: (order.totalDurationMs ? -order.totalDurationMs * (order.progressPercent / 100) : 0) + 'ms'
                         }"
                       ></div>
 
@@ -72,8 +72,8 @@
                           animationDuration: (order.totalDurationMs || 0) + 'ms',
                           // 2. Set the starting position (e.g., starts at 40% along the path)
                           left: (order.progressPercent || 0) + '%',
-                          // 3. Set a delay so the animation starts running from the correct time offset
-                          animationDelay: (order.totalDurationMs ? -order.totalDurationMs * (order.progressPercent / 100) : 0) + 'ms' 
+                          // // 3. Set a delay so the animation starts running from the correct time offset
+                          // animationDelay: (order.totalDurationMs ? -order.totalDurationMs * (order.progressPercent / 100) : 0) + 'ms' 
                         }"
                       >
                         <svg viewBox="0 0 24 24" width="24" height="24" fill="#0046be">

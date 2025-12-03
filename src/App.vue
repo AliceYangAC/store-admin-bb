@@ -68,7 +68,7 @@ export default {
               
               // REFACTOR: Standardize on 'duration' (seconds)
               // We check both keys just in case the DB field name varies
-              const incomingDuration = newOrder.duration || newOrder.shippingDuration;
+              const incomingDuration = newOrder.shipment.duration;
 
               if (incomingDuration) {
                 // Pass seconds directly. OrderList.vue handles the *1000 conversion.

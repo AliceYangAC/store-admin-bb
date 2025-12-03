@@ -52,33 +52,10 @@
                       <span class="arrow">➜</span>
                       <span class="to">{{ order.shipping.city || 'Customer' }}</span>
                     </div>
-                    <div class="progress-track" v-once>
-                      <div 
-                        class="progress-fill" 
-                        :style="{ 
-                          // 1. Total duration (The speed of the car/bar remains constant)
-                          animationDuration: (order.totalDurationMs || 0) + 'ms',
-                          
-                          // 2. Negative Delay: Tells CSS 'Start this animation X seconds in the past'
-                          // Formula: -(TotalTime * (Percent / 100))
-                          animationDelay: '-' + (order.totalDurationMs * (order.progressPercent / 100)) + 'ms'
-                        }"
-                      ></div>
-
-                      <div 
-                        class="car-icon"
-                        :style="{ 
-                          animationDuration: (order.totalDurationMs || 0) + 'ms',
-                          
-                          // 3. Apply the exact same delay to the car so it stays synced with the bar
-                          animationDelay: '-' + (order.totalDurationMs * (order.progressPercent / 100)) + 'ms' 
-                        }"
-                      >
-                        <svg viewBox="0 0 24 24" width="24" height="24" fill="#0046be">
-                          <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
-                        </svg>
-                      </div>
-                    </div>
+                    <ShippingProgress 
+                      :totalDuration="order.totalDurationMs"
+                      :progressPercent="order.progressPercent"
+                    />
                     <!-- Display remaining duration (in seconds) -->
                     <span class="status-text">On it's way...</span>
                   </div>
@@ -120,10 +97,12 @@
 </template>
 
 <script>
+import ShippingProgress from './ShippingProgress.vue';
   export default {
     name: 'OrderList',
     props: ['orders', 'products'],
     emits: ['fetchOrders', 'completeOrder', 'cancelOrder', 'shipOrder'], 
+    components: { ShippingProgress },
     data() {
       return {
         currentTab: 1,
@@ -208,7 +187,6 @@
   overflow: hidden;
 }
 
-/* TABS STYLING */
 .tabs {
   display: flex;
   background-color: #f4f4f4;
@@ -309,9 +287,6 @@ td {
 
 .btn:hover { opacity: 0.9; }
 
-/* .refund-btn { background-color: #fff0e6; color: #d35400; border-color: #d35400; }
-.refund-btn:hover { background-color: #d35400; color: white; } */
-
 .status-done { color: #888; font-style: italic; }
 
 /* EXPANDED DETAILS STYLING */
@@ -343,41 +318,10 @@ a {
 }
 
 .delivery-widget {
-  width: 150px; /* Fixed width for the widget */
+  width: 150px; 
   display: flex;
   flex-direction: column;
   gap: 5px;
-}
-
-.progress-track {
-  position: relative;
-  width: 100%;
-  height: 6px;
-  background-color: #e0e0e0;
-  border-radius: 3px;
-  margin-top: 8px; /* Make room for the car on top */
-}
-
-.progress-fill {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  background-color: #ffe007;
-  border-radius: 3px;
-  width: 0%;
-  animation-name: drive-progress;
-  animation-timing-function: linear;
-  animation-fill-mode: forwards;
-}
-
-.car-icon {
-  position: absolute;
-  top: -14px;
-  left: 0;
-  animation-name: drive-car;
-  animation-timing-function: linear;
-  animation-fill-mode: forwards;
 }
 
 .status-text {
@@ -386,8 +330,6 @@ a {
   font-style: italic;
   text-align: right;
 }
-
-/* Add to OrderList.vue <style> */
 
 .route-info {
   font-size: 0.75rem;
@@ -411,16 +353,5 @@ a {
   text-overflow: ellipsis;
   max-width: 65px; /* Truncate very long city names */
   text-align: right;
-}
-
-/* --- KEYFRAMES --- */
-@keyframes drive-progress {
-  0% { width: 0%; }
-  100% { width: 100%; }
-}
-
-@keyframes drive-car {
-  0% { left: 0%; }
-  100% { left: calc(100% - 5px); } 
 }
 </style>

@@ -22,16 +22,34 @@ export default {
   props: ['totalDuration', 'progressPercent'],
   data() {
     return {
-      // SNAPSHOT: We capture the percent *only* when this component is first created.
-      // Even if the parent passes a new 'progressPercent' 2 seconds later,
-      // this 'initialPercent' variable will NOT change.
-      initialPercent: this.progressPercent
+      // Start as null so we know we haven't "locked" a value yet
+      frozenPercent: null
+    }
+  },
+  watch: {
+    progressPercent: {
+      immediate: true,
+      handler(newVal) {
+        // THE LATCH:
+        // 1. If we already have a frozenPercent, do nothing (Prevents Jitter)
+        if (this.frozenPercent !== null) return;
+
+        // 2. If the new value is valid, lock it in (Fixes the Reset/0% issue)
+        // We check for undefined/null to ensure we don't snapshot an empty state.
+        if (newVal !== undefined && newVal !== null) {
+          this.frozenPercent = newVal;
+        }
+      }
     }
   },
   computed: {
     animationStyle() {
-      // Calculate the negative delay based on the SNAPSHOT, not the live prop
-      const delay = -(this.totalDuration * (this.initialPercent / 100));
+      // Use the frozen percent. If it's still null (loading), default to 0.
+      const percent = this.frozenPercent || 0;
+      
+      // Calculate delay based on the locked percentage
+      const delay = -(this.totalDuration * (percent / 100));
+      
       return {
         animationDuration: (this.totalDuration || 0) + 'ms',
         animationDelay: delay + 'ms'

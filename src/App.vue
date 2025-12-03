@@ -65,10 +65,7 @@ export default {
           if (incomingOrders) {
             this.orders = incomingOrders.map(newOrder => {
               const existingOrder = this.orders.find(o => o.orderId === newOrder.orderId);
-              
-              // REFACTOR: Standardize on 'duration' (seconds)
-              // We check both keys just in case the DB field name varies
-              const incomingDuration = newOrder.shipment.duration;
+              const incomingDuration = newOrder.shipping.duration;
 
               if (incomingDuration) {
                 // Pass seconds directly. OrderList.vue handles the *1000 conversion.

@@ -3,6 +3,7 @@
   <router-view
     :orders="orders"
     :products="products"
+    :resolveImageUrl="resolveImageUrl" 
     @fetchOrders="fetchOrders"
     @completeOrder="completeOrder"
     @addProductsToList="addProductsToList"
@@ -16,6 +17,7 @@
 </template>
 
 <script>
+// ... (Script remains exactly the same as your previous version)
 import TopNav from './components/TopNav.vue';
 
 const productServiceUrl = "/products/";
@@ -59,6 +61,7 @@ export default {
       return `${baseUrl}${imagePath}`;
     },
     async fetchOrders() {
+      // ... (Rest of your existing methods) ...
       await fetch(`${makelineServiceUrl}order/fetch`)
       .then(response => response.json())
       .then(incomingOrders => {

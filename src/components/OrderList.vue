@@ -52,7 +52,7 @@
                       <span class="arrow">➜</span>
                       <span class="to">{{ order.shipping.city || 'Customer' }}</span>
                     </div>
-                    <div class="progress-track">
+                    <div class="progress-track" v-once>
                       <div 
                         class="progress-fill" 
                         :style="{ 

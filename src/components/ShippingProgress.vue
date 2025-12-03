@@ -99,6 +99,6 @@ export default {
 
 @keyframes drive-car {
   0% { left: 0%; }
-  100% { left: calc(100% - 5px); } 
+  100% { left: calc(100% - 12px); } 
 }
 </style>

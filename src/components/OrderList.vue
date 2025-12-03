@@ -2,14 +2,17 @@
   <div class="order-list-container">
     
     <div class="tabs">
-      <button 
-        v-for="(label, status) in statusTabs" 
-        :key="status"
-        :class="['tab-btn', { active: currentTab === parseInt(status) }]"
-        @click="currentTab = parseInt(status)"
-      >
-        {{ label }} ({{ getCountForStatus(status) }})
-      </button>
+      <template v-for="(label, status) in statusTabs" :key="status">
+        <button 
+          v-if="parseInt(status) !== 0 || getCountForStatus(status) > 0"
+          :class="['tab-btn', { active: currentTab === parseInt(status) }]"
+          @click="currentTab = parseInt(status)"
+        >
+          {{ label }} ({{ getCountForStatus(status) }})
+          
+          <span v-if="parseInt(status) === 0" class="alert-icon">!</span>
+        </button>
+      </template>
     </div>
 
     <div class="table-wrapper" v-if="filteredOrders.length > 0">
@@ -56,7 +59,6 @@
                       :totalDuration="order.totalDurationMs"
                       :progressPercent="order.progressPercent"
                     />
-                    <!-- Display remaining duration (in seconds) -->
                     <span class="status-text">On it's way...</span>
                   </div>
                 </template>
@@ -213,6 +215,14 @@ import ShippingProgress from './ShippingProgress.vue';
   color: #0046be;
   border-bottom: 3px solid #0046be;
   background-color: white;
+}
+
+/* NEW: Alert Icon Styling */
+.alert-icon {
+  color: #cc0000;
+  font-weight: 900;
+  margin-left: 5px;
+  font-size: 1.1em;
 }
 
 /* TABLE STYLING */

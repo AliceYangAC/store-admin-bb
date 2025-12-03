@@ -141,20 +141,20 @@
         const map = { 0: 'status-pending', 1: 'status-processing', 2: 'status-shipped', 3: 'status-delivered' };
         return map[status] || '';
       },
-
-      // --- ACTIONS ---
-      
       completeOrder() {
         this.$emit('completeOrder', this.order.orderId);
+        if (this.$route.path !== '/') this.$router.push('/');
       },
 
       shipOrder() {
         this.$emit('shipOrder', this.order.orderId);
+        if (this.$route.path !== '/') this.$router.push('/');
       },
 
       cancelOrder() {
         if(confirm("Are you sure you want to cancel this order?")) {
           this.$emit('cancelOrder', this.order.orderId);
+          if (this.$route.path !== '/') this.$router.push('/');
         }
       },
 

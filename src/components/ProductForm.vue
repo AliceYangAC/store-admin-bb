@@ -122,26 +122,38 @@
         isUploading: false
       }
     },
-    mounted() {
-      if (this.$route.params.id) {
-        const product = this.products.find(product => product.id == this.$route.params.id)
-        if (product) {
-            this.product = Object.assign({}, product);
+    // --- THE FIX: Watch for data changes ---
+    watch: {
+      products: {
+        immediate: true, 
+        handler(newProducts) {
+          // Whenever products update (or on load), try to find the match
+          this.loadProductFromProps();
         }
       }
     },
-    computed: {
-      validationErrors() {
-        let errors = [];
-        if (!this.product.name) errors.push('Please enter a name');
-        if (!this.product.description) errors.push('Please enter a description');
-        if (this.product.price <= 0) errors.push('Price must be greater than 0');
-        if (!this.product.category) errors.push('Please enter a category');
-        if (!this.product.brand) errors.push('Please enter a brand');
-        return errors;
-      }
+    mounted() {
+      // Also try on mount (in case data was already there)
+      this.loadProductFromProps();
     },
     methods: {
+      loadProductFromProps() {
+        // 1. Check if we are in "Edit" mode (have an ID in URL)
+        const paramId = this.$route.params.id;
+        if (!paramId) return;
+
+        // 2. Safety check: ensure products exist
+        if (!this.products || this.products.length === 0) return;
+
+        // 3. Find the product
+        // Use loose equality (==) to match string param to number ID
+        const foundProduct = this.products.find(p => p.id == paramId);
+        
+        // 4. If found, copy it to local data
+        if (foundProduct) {
+           this.product = Object.assign({}, foundProduct);
+        }
+      },
       async uploadImage(event) {
         const file = event.target.files[0];
         if (!file) return;

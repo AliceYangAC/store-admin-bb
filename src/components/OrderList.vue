@@ -52,20 +52,38 @@
                       <span class="arrow">➜</span>
                       <span class="to">{{ order.shipping.city || 'Customer' }}</span>
                     </div>
-                    <div class="progress-track">
+                <div class="progress-track">
                       <div 
                         class="progress-fill" 
-                        :style="{ animationDuration: ((order.duration || 0) * 1000) + 'ms' }"
+                        :style="{ 
+                          // 1. Set the final duration (total time)
+                          animationDuration: (order.totalDurationMs || 0) + 'ms',
+                          // 2. Set the starting position (e.g., starts at 40% complete)
+                          width: (order.progressPercent || 0) + '%', 
+                          // 3. Set a delay so the animation only starts running for the remaining time
+                          animationDelay: (order.totalDurationMs ? -order.totalDurationMs * (order.progressPercent / 100) : 0) + 'ms'
+                        }"
                       ></div>
 
                       <div 
                         class="car-icon"
-                        :style="{ animationDuration: ((order.duration || 0) * 1000) + 'ms' }"
+                        :style="{ 
+                          // 1. Set the final duration (total time)
+                          animationDuration: (order.totalDurationMs || 0) + 'ms',
+                          // 2. Set the starting position (e.g., starts at 40% along the path)
+                          left: (order.progressPercent || 0) + '%',
+                          // 3. Set a delay so the animation starts running from the correct time offset
+                          animationDelay: (order.totalDurationMs ? -order.totalDurationMs * (order.progressPercent / 100) : 0) + 'ms' 
+                        }"
                       >
-                        </div>
-
+                        <svg viewBox="0 0 24 24" width="24" height="24" fill="#0046be">
+                          <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+                        </svg>
                       </div>
-                      <span class="status-text">{{ (order.duration || 0).toFixed(0) }}s delivery...</span>
+
+                    </div>
+                    <!-- Display remaining duration (in seconds) -->
+                    <span class="status-text">{{ (order.remainingDurationMs / 1000).toFixed(0) }}s remaining</span>
                   </div>
                 </template>
 

@@ -83,7 +83,7 @@
 
                     </div>
                     <!-- Display remaining duration (in seconds) -->
-                    <span class="status-text">{{ (order.remainingDurationMs / 1000).toFixed(0) }}s remaining</span>
+                    <span class="status-text">On it's way...</span>
                   </div>
                 </template>
 
@@ -216,6 +216,7 @@
   display: flex;
   background-color: #f4f4f4;
   border-bottom: 1px solid #ddd;
+  text-align: center;
 }
 
 .tab-btn {

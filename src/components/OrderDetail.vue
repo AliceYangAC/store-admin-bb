@@ -255,7 +255,7 @@ a {
 .status-pending { color: #cc0000; font-weight: bold; }
 .status-processing { color: #e6b800; font-weight: bold; }
 .status-shipped { color: #008000; font-weight: bold; }
-.status-delivered { color: #0046be; font-weight: bold; }
+.status-delivered { color: #7c7c7c; font-weight: bold; }
 
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: 12px; border-bottom: 1px solid #eee; }

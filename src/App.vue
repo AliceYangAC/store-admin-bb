@@ -51,19 +51,23 @@ export default {
   },
   methods: {
     resolveImageUrl(imagePath) {
+      console.log(`[ResolveImage] Input: ${imagePath}`);
+
       if (!imagePath || imagePath === '/placeholder.png') return '/placeholder.png';
       if (imagePath.startsWith('http')) return imagePath;
       
       const path = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+      const prefix = "/products"; 
+      const hasPrefix = path.startsWith(prefix);
+      console.log(`[ResolveImage] Normalized: ${path} | Has Prefix? ${hasPrefix}`);
 
-      if (path.startsWith(productServiceUrl)) {
+      if (hasPrefix) {
         return path;
       }
 
-      return `/products${path}`;
+      return `${prefix}${path}`;
     },
     async fetchOrders() {
-      // ... (Rest of your existing methods) ...
       await fetch(`${makelineServiceUrl}order/fetch`)
       .then(response => response.json())
       .then(incomingOrders => {

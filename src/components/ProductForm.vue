@@ -2,94 +2,100 @@
   <div class="product-detail-container">
     
     <div v-if="showValidationErrors" class="error-banner">
-      <strong>Please correct the following:</strong>
+      <p>Please fix the following:</p>
       <ul>
         <li v-for="error in validationErrors" :key="error">{{ error }}</li>
       </ul>
     </div>
 
-    <div class="form-header">
-      <div class="title-section">
-        <input 
-          class="seamless-title" 
-          placeholder="Enter Product Name" 
-          v-model="product.name" 
-        />
+    <div class="header-actions">
+      <div class="product-header-info">
+        
+        <div class="input-group full-width">
+            <label class="input-label">Product Name</label>
+            <input 
+              id="product-name" 
+              class="form-input input-title" 
+              placeholder="e.g. UltraSlim X1 Laptop" 
+              v-model="product.name" 
+            />
+        </div>
         
         <div class="meta-row">
-          <div class="input-group">
-            <span class="icon-label">📂</span>
-            <input class="seamless-meta" placeholder="Category (e.g. Laptops)" v-model="product.category" />
-          </div>
-          <div class="input-group">
-            <span class="icon-label">🏷️</span>
-            <input class="seamless-meta" placeholder="Brand (e.g. Sony)" v-model="product.brand" />
-          </div>
+            <div class="half-width">
+                <label class="input-label">Category</label>
+                <input 
+                  class="form-input" 
+                  placeholder="e.g. Computers" 
+                  v-model="product.category" 
+                />
+            </div>
+            <div class="half-width">
+                <label class="input-label">Brand</label>
+                <input 
+                  class="form-input" 
+                  placeholder="e.g. Sony" 
+                  v-model="product.brand" 
+                />
+            </div>
         </div>
       </div>
 
-      <div class="header-actions">
+      <div class="action-buttons">
         <button @click="saveProduct" class="btn save-btn">
           {{ product.id ? 'Save Changes' : 'Create Product' }}
         </button>
       </div>
     </div>
 
-    <hr class="divider" />
+    <hr class="divider">
 
     <div class="product-content">
       
       <div class="image-column">
-        <div 
-          class="image-uploader" 
-          @click="triggerFileInput"
-          :class="{ 'has-image': product.image && product.image !== '/placeholder.png' }"
-        >
+        <label class="input-label">Product Image</label>
+        
+        <div class="image-placeholder">
           <img 
+            v-if="product.image && product.image !== '/placeholder.png'" 
             :src="resolveImageUrl(product)" 
             alt="Product Preview" 
             @error="handleImageError"
           />
+          <div v-else class="no-image">No Image</div>
           
-          <div class="uploader-overlay">
-            <div class="overlay-content">
-              <span class="camera-icon">📷</span>
-              <span>{{ isUploading ? 'Uploading...' : 'Click to Change Image' }}</span>
-            </div>
-          </div>
+          <div v-if="isUploading" class="upload-overlay">Uploading...</div>
         </div>
 
-        <input 
-          type="file" 
-          ref="fileInput" 
-          @change="uploadImage" 
-          accept="image/*" 
-          style="display: none;" 
-        />
+        <div class="file-upload-wrapper">
+            <label for="file-upload" class="custom-file-upload">
+                <span v-if="!isUploading">Click to Change Image</span>
+                <span v-else>Uploading...</span>
+            </label>
+            <input id="file-upload" type="file" @change="uploadImage" accept="image/*" />
+        </div>
       </div>
 
       <div class="info-column">
         
-        <div class="field-block">
-           <label>Price</label>
-           <div class="price-wrapper">
-             <span class="currency-symbol">$</span>
-             <input 
-               class="price-input" 
-               placeholder="0.00" 
-               v-model="product.price" 
-               type="number" 
-               step="0.01" 
-             />
-           </div>
+        <div class="input-group">
+           <label class="input-label">Price ($)</label>
+           <input 
+             id="product-price" 
+             class="form-input input-price" 
+             placeholder="0.00" 
+             v-model="product.price" 
+             type="number" 
+             step="0.01" 
+           />
         </div>
 
-        <div class="field-block">
-          <label>Description</label>
+        <div class="input-group">
+          <label class="input-label">Description</label>
           <textarea 
-            rows="10" 
-            class="description-input" 
-            placeholder="Describe the product features, specs, and benefits..." 
+            rows="8" 
+            class="form-input description-input" 
+            placeholder="Enter full product description..." 
             v-model="product.description" 
           />
         </div>
@@ -135,10 +141,6 @@
       }
     },
     methods: {
-      // Trigger the hidden file input when the image div is clicked
-      triggerFileInput() {
-        this.$refs.fileInput.click();
-      },
       handleImageError(e) {
         e.target.src = "/placeholder.png";
       },
@@ -205,18 +207,23 @@
         }
 
         let method = 'PUT';
-        if (!this.$route.params.id) method = 'POST';
+        if (!this.$route.params.id) {
+          method = 'POST';
+        }
 
         this.product.price = parseFloat(this.product.price);
 
         fetch(`${productServiceUrl}`, {
           method: method,
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json'
+          },
           body: JSON.stringify(this.product)
         })
           .then(response => response.json())
           .then(savedProduct => {
             alert('Product saved successfully');           
+            
             this.product = { ...this.product, ...savedProduct };
 
             if (method === 'PUT') {
@@ -235,11 +242,11 @@
     computed: {
       validationErrors() {
         let errors = [];
-        if (!this.product.name) errors.push('Name is required');
-        if (!this.product.description) errors.push('Description is required');
+        if (!this.product.name) errors.push('Please enter a name');
+        if (!this.product.description) errors.push('Please enter a description');
         if (this.product.price <= 0) errors.push('Price must be greater than 0');
-        if (!this.product.category) errors.push('Category is required');
-        if (!this.product.brand) errors.push('Brand is required');
+        if (!this.product.category) errors.push('Please enter a category');
+        if (!this.product.brand) errors.push('Please enter a brand');
         return errors;
       }
     }
@@ -249,282 +256,250 @@
 <style scoped>
 /* MAIN CONTAINER */
 .product-detail-container {
-  max-width: 900px;
-  margin: 40px auto;
-  padding: 40px;
+  text-align: left;
+  max-width: 900px; /* Slightly tighter width for readability */
+  margin: 20px auto;
+  padding: 30px;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-}
-
-.divider {
-  border: 0;
-  border-top: 1px solid #eee;
-  margin: 30px 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 
 /* ERROR BANNER */
 .error-banner {
-    background-color: #fff5f5;
+    background-color: #fff0f0;
     border-left: 4px solid #cc0000;
     color: #cc0000;
     padding: 15px;
     border-radius: 4px;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 .error-banner ul {
     margin: 5px 0 0 20px;
     padding: 0;
 }
 
-/* 1. HEADER STYLES */
-.form-header {
+/* HEADER SECTION */
+.header-actions {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 20px;
 }
 
-.title-section {
-  flex: 1;
+.product-header-info {
+    flex: 1;
 }
 
-/* Seamless Title Input */
-.seamless-title {
-  width: 100%;
-  font-size: 2rem;
-  font-weight: 800;
-  color: #333;
-  border: none;
-  border-bottom: 2px solid transparent;
-  padding: 5px 0;
-  background: transparent;
-  transition: border-color 0.2s;
-  margin-bottom: 15px;
-}
-.seamless-title:focus {
-  outline: none;
-  border-bottom-color: #0046be;
-}
-.seamless-title::placeholder {
-  color: #ccc;
-}
-
-/* Metadata Row */
-.meta-row {
-  display: flex;
-  gap: 30px;
-}
-
+/* INPUT STYLING - GENERAL */
 .input-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+    margin-bottom: 15px;
 }
 
-.icon-label {
-  font-size: 1.2rem;
+.input-label {
+    display: block;
+    font-weight: 700;
+    color: #888; /* Softer gray */
+    margin-bottom: 4px;
+    font-size: 0.75rem; /* Smaller text */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.seamless-meta {
-  border: none;
-  background: #f9f9f9;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  color: #555;
-  font-weight: 600;
-  width: 200px;
-  transition: background 0.2s;
-}
-.seamless-meta:focus {
-  outline: none;
-  background: #eef4ff;
-  color: #0046be;
+.form-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1rem;
+    box-sizing: border-box; 
+    transition: border-color 0.2s;
 }
 
-/* 2. IMAGE UPLOADER (The "Graceful" part) */
+.form-input:focus {
+    border-color: #0046be;
+    outline: none;
+    background-color: #f9fbff;
+}
+
+/* SPECIAL INPUT: TITLE */
+/* Looks like a header, edits like an input */
+.input-title {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #333;
+    padding: 5px 0;
+    border: none;
+    border-bottom: 2px solid #eee; /* Only bottom border */
+    background: transparent;
+    border-radius: 0;
+    margin-bottom: 15px;
+}
+.input-title:focus {
+    background-color: transparent;
+    border-bottom-color: #0046be;
+}
+
+/* SPECIAL INPUT: PRICE */
+.input-price {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #0046be;
+    width: 150px;
+}
+
+/* DESCRIPTION */
+.description-input {
+    line-height: 1.6;
+    color: #444;
+    resize: vertical;
+}
+
+/* META ROW (Category/Brand) */
+.meta-row {
+    display: flex;
+    gap: 20px;
+}
+
+.half-width {
+    flex: 1;
+}
+
+/* IMAGE SECTION */
 .product-content {
   display: flex;
-  gap: 50px;
+  gap: 40px;
 }
 
 .image-column {
-  flex: 0 0 350px;
+  flex: 0 0 300px;
 }
 
-.image-uploader {
-  width: 100%;
-  aspect-ratio: 1 / 1; /* Keeps it square */
-  border-radius: 12px;
-  overflow: hidden;
-  background-color: #f4f4f4;
-  position: relative;
-  cursor: pointer;
-  border: 2px dashed #ddd; /* Dashed border suggests dropzone */
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.image-uploader:hover {
-  border-color: #0046be;
-  box-shadow: 0 4px 15px rgba(0, 70, 190, 0.15);
-}
-
-.image-uploader img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain; /* Ensures image fits nicely */
-  padding: 20px;
-  transition: transform 0.3s ease;
-}
-
-.image-uploader.has-image img {
-  padding: 0;
-  object-fit: cover; /* Fills box if actual image */
-}
-
-/* Overlay that appears on hover */
-.uploader-overlay {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 70, 190, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.image-uploader:hover .uploader-overlay {
-  opacity: 1;
-}
-
-.overlay-content {
-  color: white;
-  text-align: center;
-  font-weight: bold;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.camera-icon {
-  font-size: 2rem;
-}
-
-/* 3. RIGHT COLUMN STYLES */
 .info-column {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
 }
 
-.field-block label {
-  display: block;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-weight: bold;
-  color: #888;
-  margin-bottom: 8px;
-}
-
-/* Price Input Styling */
-.price-wrapper {
-  display: flex;
-  align-items: center;
-  border-bottom: 2px solid #eee;
-  width: 150px;
-  transition: border-color 0.2s;
-}
-.price-wrapper:focus-within {
-  border-bottom-color: #0046be;
-}
-
-.currency-symbol {
-  font-size: 1.5rem;
-  color: #333;
-  font-weight: bold;
-  margin-right: 5px;
-}
-
-.price-input {
-  border: none;
-  font-size: 2rem;
-  font-weight: bold;
-  color: #0046be;
+.image-placeholder {
   width: 100%;
-  background: transparent;
-}
-.price-input:focus {
-  outline: none;
-}
-
-/* Description Styling */
-.description-input {
-  width: 100%;
-  padding: 15px;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  overflow: hidden;
   border: 1px solid #eee;
   background-color: #fafafa;
-  border-radius: 8px;
-  line-height: 1.6;
-  font-family: inherit;
-  color: #444;
-  resize: vertical;
-  transition: all 0.2s;
-}
-.description-input:focus {
-  outline: none;
-  background-color: white;
-  border-color: #0046be;
-  box-shadow: 0 0 0 3px rgba(0, 70, 190, 0.1);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
 }
 
-/* Action Button */
-.save-btn {
-  background-color: #0046be;
-  color: white;
-  padding: 12px 24px;
-  font-size: 1rem;
-  border-radius: 50px; /* Pill shape */
+.image-placeholder img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.no-image {
+  color: #ccc;
+  font-weight: bold;
+}
+
+.upload-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255,255,255,0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #0046be;
+    font-weight: bold;
+}
+
+/* CUSTOM FILE UPLOAD LINK */
+.file-upload-wrapper {
+    text-align: center;
+}
+
+/* Hide the ugly standard input */
+input[type="file"] {
+    display: none;
+}
+
+/* Style the label to look like a link/button */
+.custom-file-upload {
+    display: inline-block;
+    cursor: pointer;
+    color: #0046be;
+    font-weight: bold;
+    font-size: 0.9rem;
+    padding: 5px 10px;
+    border-radius: 4px;
+}
+
+.custom-file-upload:hover {
+    background-color: #f0f6ff;
+    text-decoration: underline;
+}
+
+/* DIVIDER */
+.divider {
+    border: 0;
+    border-top: 1px solid #eee;
+    margin: 30px 0;
+}
+
+/* SAVE BUTTON */
+.btn {
+  padding: 10px 25px;
   border: none;
+  border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
-  box-shadow: 0 4px 10px rgba(0, 70, 190, 0.3);
-  transition: transform 0.1s, box-shadow 0.2s;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.save-btn {
+  background-color: #0046be; 
+  color: white; 
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
 .save-btn:hover {
   background-color: #003da6;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(0, 70, 190, 0.4);
+  transform: translateY(-1px);
 }
 
-.save-btn:active {
-  transform: translateY(0);
+.action-buttons {
+    /* Aligns button to top right */
+    display: flex;
+    align-items: flex-start;
 }
 
 /* RESPONSIVE */
-@media (max-width: 850px) {
+@media (max-width: 768px) {
   .product-content {
     flex-direction: column;
   }
-  .image-column {
-    flex: 0 0 auto;
-    width: 100%;
-    max-width: 400px;
-    margin: 0 auto;
-  }
-  .form-header {
-    flex-direction: column;
-  }
+  
   .header-actions {
-    width: 100%;
-    text-align: right;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .meta-row {
+      flex-direction: column;
+      gap: 10px;
+  }
+  
+  .image-column {
+      flex: 0 0 auto;
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto;
   }
 }
 </style>

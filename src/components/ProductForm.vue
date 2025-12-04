@@ -57,12 +57,10 @@
         
         <div class="image-placeholder">
           <img 
-            v-if="product.image && product.image !== '/placeholder.png'" 
-            :src="resolveImageUrl(product.image)" 
+            :src="resolveImageUrl(product)" 
             alt="Product Preview" 
             @error="handleImageError"
           />
-          <div v-else class="no-image">No Image</div>
           
           <div v-if="isUploading" class="upload-overlay">Uploading...</div>
         </div>
@@ -117,7 +115,7 @@
         product: {
           id: 0,
           name: '',
-          image: '/placeholder.png', // Ensure default is set
+          image: '/placeholder.png', 
           description: '',
           price: 0.00,
           category: '',
@@ -153,7 +151,7 @@
       resetForm() {
         this.product = {
           id: 0, name: '', 
-          image: '/placeholder.png', // Reset image too
+          image: '/placeholder.png', 
           description: '', price: 0.00, category: '', brand: '',
           lastImageUpdate: Date.now()
         };
@@ -174,7 +172,6 @@
 
         if (!this.product.id) {
             alert("Please save the product first before uploading an image.");
-            // Reset input so they can try again later
             event.target.value = ''; 
             return;
         }
@@ -191,11 +188,8 @@
             });
             
             if (response.ok) {
-                // If you are using the ID-based system, we just force a refresh timestamp
+                // Force image refresh via timestamp
                 this.product.lastImageUpdate = Date.now();
-                // If you are using the Path-based system, update the path:
-                const data = await response.json();
-                if(data.image) this.product.image = data.image;
             } else {
                 alert('Failed to upload image');
             }
@@ -260,7 +254,7 @@
 </script>
 
 <style scoped>
-/* MAIN CONTAINER */
+/* CONTAINER STYLES */
 .product-detail-container {
   text-align: left;
   max-width: 900px;
@@ -451,7 +445,7 @@
     margin: 30px 0;
 }
 
-/* SAVE BUTTON */
+/* SAVE BUTTON (Updated) */
 .btn {
   padding: 10px 25px;
   border: none;
@@ -459,18 +453,18 @@
   cursor: pointer;
   font-weight: bold;
   font-size: 1rem;
-  transition: all 0.2s;
+  transition: background-color 0.2s; /* Simplified transition */
 }
 
 .save-btn {
   background-color: #0046be; 
   color: white; 
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  /* Removed box-shadow */
 }
 
 .save-btn:hover {
   background-color: #003da6;
-  transform: translateY(-1px);
+  /* Removed transform */
 }
 
 .action-buttons {

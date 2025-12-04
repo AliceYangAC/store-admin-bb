@@ -20,7 +20,12 @@
     <div class="product-content">
       <div class="image-column">
         <div class="image-placeholder">
-          <img v-if="product.image" :src="product.image" :alt="product.name">
+          <img 
+            v-if="product.id" 
+            :src="resolveImageUrl(product)" 
+            :alt="product.name"
+            @error="handleImageError"
+          >
           <div v-else class="no-image">No Image</div>
         </div>
       </div>
@@ -51,21 +56,26 @@
 <script>
   export default {
     name: 'ProductDetail',
-    props: ['products'],
+    // Accepts resolveImageUrl from App.vue
+    props: ['products', 'resolveImageUrl'],
     computed: {
       product() {
-        // loose equality (==) to catch string vs number id mismatch
         return this.products.find(product => product.id == this.$route.params.id)
       },
       productExists() {
         return !!this.product
       }
     },
+    methods: {
+      handleImageError(e) {
+        e.target.src = '/placeholder.png';
+      }
+    }
   }
 </script>
 
 <style scoped>
-/* CONTAINER STYLES (Matches OrderDetail) */
+/* (Your CSS remains exactly the same as provided) */
 .product-detail-container {
   text-align: left;
   max-width: 1000px;
@@ -76,7 +86,6 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
-/* HEADER SECTION */
 .header-actions {
   display: flex;
   justify-content: space-between;
@@ -110,21 +119,19 @@
   text-transform: uppercase;
 }
 
-/* CONTENT LAYOUT */
 .product-content {
   display: flex;
   gap: 40px;
 }
 
 .image-column {
-  flex: 0 0 40%; /* Takes up 40% width */
+  flex: 0 0 40%;
 }
 
 .info-column {
   flex: 1;
 }
 
-/* IMAGE STYLING */
 .image-placeholder {
   width: 100%;
   border-radius: 8px;
@@ -145,11 +152,10 @@
   color: #ccc;
 }
 
-/* TYPOGRAPHY & DETAILS */
 .price-tag {
   font-size: 2rem;
   font-weight: bold;
-  color: #0046be; /* Brand Blue */
+  color: #0046be; 
   margin-bottom: 20px;
 }
 
@@ -171,7 +177,6 @@
   color: #555;
 }
 
-/* BUTTONS (Borrowed from OrderDetail) */
 .btn {
   padding: 10px 20px;
   border: none;
@@ -182,7 +187,6 @@
   transition: opacity 0.2s;
 }
 
-/* Using a blue style similar to "Process Order" */
 .edit-btn {
   background-color: #e6f0ff; 
   color: #0046be; 
@@ -199,7 +203,6 @@ a {
   color: #0046be;
 }
 
-/* RESPONSIVE */
 @media (max-width: 768px) {
   .product-content {
     flex-direction: column;

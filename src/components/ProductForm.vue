@@ -2,95 +2,99 @@
   <div class="product-detail-container">
     
     <div v-if="showValidationErrors" class="error-banner">
-      <p>Please correct the following errors:</p>
+      <strong>Please correct the following:</strong>
       <ul>
         <li v-for="error in validationErrors" :key="error">{{ error }}</li>
       </ul>
     </div>
 
-    <div class="header-actions">
-      <div class="product-header-info" style="flex: 1; margin-right: 20px;">
-        <label class="input-label">Product Name</label>
+    <div class="form-header">
+      <div class="title-section">
         <input 
-          id="product-name" 
-          class="form-input input-title" 
-          placeholder="e.g. UltraSlim X1 Laptop" 
+          class="seamless-title" 
+          placeholder="Enter Product Name" 
           v-model="product.name" 
         />
         
         <div class="meta-row">
-            <div class="half-width">
-                <label class="input-label">Category</label>
-                <input 
-                  class="form-input" 
-                  placeholder="Category" 
-                  v-model="product.category" 
-                />
-            </div>
-            <div class="half-width">
-                <label class="input-label">Brand</label>
-                <input 
-                  class="form-input" 
-                  placeholder="Brand" 
-                  v-model="product.brand" 
-                />
-            </div>
+          <div class="input-group">
+            <span class="icon-label">📂</span>
+            <input class="seamless-meta" placeholder="Category (e.g. Laptops)" v-model="product.category" />
+          </div>
+          <div class="input-group">
+            <span class="icon-label">🏷️</span>
+            <input class="seamless-meta" placeholder="Brand (e.g. Sony)" v-model="product.brand" />
+          </div>
         </div>
       </div>
 
-      <div class="action-buttons">
+      <div class="header-actions">
         <button @click="saveProduct" class="btn save-btn">
-          {{ product.id ? 'Update Product' : 'Create Product' }}
+          {{ product.id ? 'Save Changes' : 'Create Product' }}
         </button>
       </div>
     </div>
 
+    <hr class="divider" />
+
     <div class="product-content">
       
       <div class="image-column">
-        <label class="input-label">Product Image</label>
-        
-        <div class="image-placeholder">
+        <div 
+          class="image-uploader" 
+          @click="triggerFileInput"
+          :class="{ 'has-image': product.image && product.image !== '/placeholder.png' }"
+        >
           <img 
             :src="resolveImageUrl(product)" 
             alt="Product Preview" 
             @error="handleImageError"
           />
           
-          <div v-if="isUploading" class="upload-overlay">Uploading...</div>
+          <div class="uploader-overlay">
+            <div class="overlay-content">
+              <span class="camera-icon">📷</span>
+              <span>{{ isUploading ? 'Uploading...' : 'Click to Change Image' }}</span>
+            </div>
+          </div>
         </div>
 
-        <div class="file-upload-wrapper">
-            <input type="file" @change="uploadImage" accept="image/*" class="file-input" />
-            <span class="file-instruction">Click to upload new image</span>
-        </div>
+        <input 
+          type="file" 
+          ref="fileInput" 
+          @change="uploadImage" 
+          accept="image/*" 
+          style="display: none;" 
+        />
       </div>
 
       <div class="info-column">
         
-        <div class="info-group">
-           <label class="input-label">Price ($)</label>
-           <input 
-             id="product-price" 
-             class="form-input input-price" 
-             placeholder="0.00" 
-             v-model="product.price" 
-             type="number" 
-             step="0.01" 
-           />
+        <div class="field-block">
+           <label>Price</label>
+           <div class="price-wrapper">
+             <span class="currency-symbol">$</span>
+             <input 
+               class="price-input" 
+               placeholder="0.00" 
+               v-model="product.price" 
+               type="number" 
+               step="0.01" 
+             />
+           </div>
         </div>
 
-        <div class="info-group">
-          <label class="input-label">Description</label>
+        <div class="field-block">
+          <label>Description</label>
           <textarea 
-            rows="8" 
-            id="product-description" 
-            class="form-input description-input" 
-            placeholder="Enter full product description..." 
+            rows="10" 
+            class="description-input" 
+            placeholder="Describe the product features, specs, and benefits..." 
             v-model="product.description" 
           />
-          <input type="hidden" id="product-id" v-model="product.id" />
         </div>
+        
+        <input type="hidden" v-model="product.id" />
 
       </div>
     </div>
@@ -114,7 +118,7 @@
           price: 0.00,
           category: '',
           brand: '',
-          lastImageUpdate: Date.now() // Used to force refresh image
+          lastImageUpdate: Date.now()
         },
         showValidationErrors: false,
         isUploading: false
@@ -123,20 +127,19 @@
     watch: {
       products: {
         immediate: true, 
-        handler() {
-          this.initForm();
-        }
+        handler() { this.initForm(); }
       },
       '$route.params.id': {
         immediate: true,
-        handler() {
-          this.initForm();
-        }
+        handler() { this.initForm(); }
       }
     },
     methods: {
+      // Trigger the hidden file input when the image div is clicked
+      triggerFileInput() {
+        this.$refs.fileInput.click();
+      },
       handleImageError(e) {
-        // If image fails to load, use placeholder
         e.target.src = "/placeholder.png";
       },
       initForm() {
@@ -167,7 +170,6 @@
         const file = event.target.files[0];
         if (!file) return;
 
-        // Must have an ID to associate image
         if (!this.product.id) {
             alert("Please save the product first before uploading an image.");
             return;
@@ -185,7 +187,6 @@
             });
             
             if (response.ok) {
-                // Update timestamp to force the <img> tag to refresh
                 this.product.lastImageUpdate = Date.now();
             } else {
                 alert('Failed to upload image');
@@ -204,24 +205,18 @@
         }
 
         let method = 'PUT';
-        if (!this.$route.params.id) {
-          method = 'POST';
-        }
+        if (!this.$route.params.id) method = 'POST';
 
         this.product.price = parseFloat(this.product.price);
 
         fetch(`${productServiceUrl}`, {
           method: method,
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(this.product)
         })
           .then(response => response.json())
           .then(savedProduct => {
             alert('Product saved successfully');           
-            
-            // Merge response (contains new ID if POST)
             this.product = { ...this.product, ...savedProduct };
 
             if (method === 'PUT') {
@@ -240,11 +235,11 @@
     computed: {
       validationErrors() {
         let errors = [];
-        if (!this.product.name) errors.push('Please enter a name');
-        if (!this.product.description) errors.push('Please enter a description');
+        if (!this.product.name) errors.push('Name is required');
+        if (!this.product.description) errors.push('Description is required');
         if (this.product.price <= 0) errors.push('Price must be greater than 0');
-        if (!this.product.category) errors.push('Please enter a category');
-        if (!this.product.brand) errors.push('Please enter a brand');
+        if (!this.product.category) errors.push('Category is required');
+        if (!this.product.brand) errors.push('Brand is required');
         return errors;
       }
     }
@@ -252,197 +247,284 @@
 </script>
 
 <style scoped>
-/* CONTAINER STYLES */
+/* MAIN CONTAINER */
 .product-detail-container {
-  text-align: left;
-  max-width: 1000px;
-  margin: 20px auto;
-  padding: 20px;
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 40px;
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.divider {
+  border: 0;
+  border-top: 1px solid #eee;
+  margin: 30px 0;
 }
 
 /* ERROR BANNER */
 .error-banner {
-    background-color: #fff0f0;
-    border: 1px solid #ffcccc;
+    background-color: #fff5f5;
+    border-left: 4px solid #cc0000;
     color: #cc0000;
-    padding: 10px;
-    border-radius: 5px;
-    margin-bottom: 20px;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 30px;
 }
 .error-banner ul {
     margin: 5px 0 0 20px;
     padding: 0;
 }
 
-/* HEADER SECTION */
-.header-actions {
+/* 1. HEADER STYLES */
+.form-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 20px;
-  margin-bottom: 30px;
+  gap: 20px;
 }
 
-/* CONTENT LAYOUT */
-.product-content {
-  display: flex;
-  gap: 40px;
-}
-
-.image-column {
-  flex: 0 0 40%;
-}
-
-.info-column {
+.title-section {
   flex: 1;
 }
 
-/* FORM STYLING */
-.input-label {
-    display: block;
-    font-weight: bold;
-    color: #666;
-    margin-bottom: 5px;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-}
-
-.form-input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-family: inherit;
-    box-sizing: border-box; 
-    margin-bottom: 10px;
-}
-
-.form-input:focus {
-    border-color: #0046be;
-    outline: none;
-}
-
-.input-title {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #333;
-    padding: 10px 0;
-    border: none;
-    border-bottom: 2px solid #eee;
-    background: transparent;
-    margin-bottom: 15px;
-}
-.input-title:focus {
-    border-bottom-color: #0046be;
-}
-
-.input-price {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #0046be;
-    width: 150px;
-}
-
-.description-input {
-    resize: vertical;
-    line-height: 1.6;
-}
-
-.meta-row {
-    display: flex;
-    gap: 20px;
-    margin-top: 10px;
-}
-
-.half-width {
-    flex: 1;
-}
-
-/* IMAGE STYLING */
-.image-placeholder {
+/* Seamless Title Input */
+.seamless-title {
   width: 100%;
-  border-radius: 8px;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #333;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 5px 0;
+  background: transparent;
+  transition: border-color 0.2s;
+  margin-bottom: 15px;
+}
+.seamless-title:focus {
+  outline: none;
+  border-bottom-color: #0046be;
+}
+.seamless-title::placeholder {
+  color: #ccc;
+}
+
+/* Metadata Row */
+.meta-row {
+  display: flex;
+  gap: 30px;
+}
+
+.input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-label {
+  font-size: 1.2rem;
+}
+
+.seamless-meta {
+  border: none;
+  background: #f9f9f9;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #555;
+  font-weight: 600;
+  width: 200px;
+  transition: background 0.2s;
+}
+.seamless-meta:focus {
+  outline: none;
+  background: #eef4ff;
+  color: #0046be;
+}
+
+/* 2. IMAGE UPLOADER (The "Graceful" part) */
+.product-content {
+  display: flex;
+  gap: 50px;
+}
+
+.image-column {
+  flex: 0 0 350px;
+}
+
+.image-uploader {
+  width: 100%;
+  aspect-ratio: 1 / 1; /* Keeps it square */
+  border-radius: 12px;
   overflow: hidden;
-  border: 1px solid #eee;
-  background-color: #fafafa;
+  background-color: #f4f4f4;
   position: relative;
-  min-height: 200px;
+  cursor: pointer;
+  border: 2px dashed #ddd; /* Dashed border suggests dropzone */
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.image-placeholder img {
+.image-uploader:hover {
+  border-color: #0046be;
+  box-shadow: 0 4px 15px rgba(0, 70, 190, 0.15);
+}
+
+.image-uploader img {
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: contain; /* Ensures image fits nicely */
+  padding: 20px;
+  transition: transform 0.3s ease;
+}
+
+.image-uploader.has-image img {
+  padding: 0;
+  object-fit: cover; /* Fills box if actual image */
+}
+
+/* Overlay that appears on hover */
+.uploader-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 70, 190, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.image-uploader:hover .uploader-overlay {
+  opacity: 1;
+}
+
+.overlay-content {
+  color: white;
+  text-align: center;
+  font-weight: bold;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.camera-icon {
+  font-size: 2rem;
+}
+
+/* 3. RIGHT COLUMN STYLES */
+.info-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.field-block label {
   display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: bold;
+  color: #888;
+  margin-bottom: 8px;
 }
 
-.upload-overlay {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(255,255,255,0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: #0046be;
-    font-weight: bold;
+/* Price Input Styling */
+.price-wrapper {
+  display: flex;
+  align-items: center;
+  border-bottom: 2px solid #eee;
+  width: 150px;
+  transition: border-color 0.2s;
+}
+.price-wrapper:focus-within {
+  border-bottom-color: #0046be;
 }
 
-.file-upload-wrapper {
-    margin-top: 10px;
-    text-align: center;
+.currency-symbol {
+  font-size: 1.5rem;
+  color: #333;
+  font-weight: bold;
+  margin-right: 5px;
 }
 
-.file-input {
-    margin-top: 5px;
-}
-
-.file-instruction {
-    display: block;
-    font-size: 0.8rem;
-    color: #888;
-    margin-top: 5px;
-}
-
-/* BUTTONS */
-.btn {
-  padding: 10px 20px;
+.price-input {
   border: none;
-  border-radius: 5px;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #0046be;
+  width: 100%;
+  background: transparent;
+}
+.price-input:focus {
+  outline: none;
+}
+
+/* Description Styling */
+.description-input {
+  width: 100%;
+  padding: 15px;
+  border: 1px solid #eee;
+  background-color: #fafafa;
+  border-radius: 8px;
+  line-height: 1.6;
+  font-family: inherit;
+  color: #444;
+  resize: vertical;
+  transition: all 0.2s;
+}
+.description-input:focus {
+  outline: none;
+  background-color: white;
+  border-color: #0046be;
+  box-shadow: 0 0 0 3px rgba(0, 70, 190, 0.1);
+}
+
+/* Action Button */
+.save-btn {
+  background-color: #0046be;
+  color: white;
+  padding: 12px 24px;
+  font-size: 1rem;
+  border-radius: 50px; /* Pill shape */
+  border: none;
   cursor: pointer;
   font-weight: bold;
-  border: 1px solid transparent;
-  transition: opacity 0.2s;
-  font-size: 1rem;
-}
-
-.save-btn {
-  background-color: #0046be; 
-  color: white; 
+  box-shadow: 0 4px 10px rgba(0, 70, 190, 0.3);
+  transition: transform 0.1s, box-shadow 0.2s;
 }
 
 .save-btn:hover {
   background-color: #003da6;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 70, 190, 0.4);
 }
 
-@media (max-width: 768px) {
+.save-btn:active {
+  transform: translateY(0);
+}
+
+/* RESPONSIVE */
+@media (max-width: 850px) {
   .product-content {
     flex-direction: column;
   }
-  
-  .header-actions {
-    flex-direction: column;
-    gap: 15px;
+  .image-column {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
   }
-  
-  .meta-row {
-      flex-direction: column;
-      gap: 10px;
+  .form-header {
+    flex-direction: column;
+  }
+  .header-actions {
+    width: 100%;
+    text-align: right;
   }
 }
 </style>

@@ -2,7 +2,7 @@
   <div class="product-detail-container">
     
     <div v-if="showValidationErrors" class="error-banner">
-      <p>Please fix the following:</p>
+      <strong>Please fix the following:</strong>
       <ul>
         <li v-for="error in validationErrors" :key="error">{{ error }}</li>
       </ul>
@@ -58,7 +58,7 @@
         <div class="image-placeholder">
           <img 
             v-if="product.image && product.image !== '/placeholder.png'" 
-            :src="resolveImageUrl(product)" 
+            :src="resolveImageUrl(product.image)" 
             alt="Product Preview" 
             @error="handleImageError"
           />
@@ -68,11 +68,8 @@
         </div>
 
         <div class="file-upload-wrapper">
-            <label for="file-upload" class="custom-file-upload">
-                <span v-if="!isUploading">Click to Change Image</span>
-                <span v-else>Uploading...</span>
-            </label>
-            <input id="file-upload" type="file" @change="uploadImage" accept="image/*" />
+            <input type="file" @change="uploadImage" accept="image/*" class="standard-file-input" />
+            <div class="help-text">Supported: JPG, PNG</div>
         </div>
       </div>
 
@@ -120,6 +117,7 @@
         product: {
           id: 0,
           name: '',
+          image: '/placeholder.png', // Ensure default is set
           description: '',
           price: 0.00,
           category: '',
@@ -154,7 +152,9 @@
       },
       resetForm() {
         this.product = {
-          id: 0, name: '', description: '', price: 0.00, category: '', brand: '',
+          id: 0, name: '', 
+          image: '/placeholder.png', // Reset image too
+          description: '', price: 0.00, category: '', brand: '',
           lastImageUpdate: Date.now()
         };
         this.showValidationErrors = false;
@@ -174,6 +174,8 @@
 
         if (!this.product.id) {
             alert("Please save the product first before uploading an image.");
+            // Reset input so they can try again later
+            event.target.value = ''; 
             return;
         }
 
@@ -189,7 +191,11 @@
             });
             
             if (response.ok) {
+                // If you are using the ID-based system, we just force a refresh timestamp
                 this.product.lastImageUpdate = Date.now();
+                // If you are using the Path-based system, update the path:
+                const data = await response.json();
+                if(data.image) this.product.image = data.image;
             } else {
                 alert('Failed to upload image');
             }
@@ -257,7 +263,7 @@
 /* MAIN CONTAINER */
 .product-detail-container {
   text-align: left;
-  max-width: 900px; /* Slightly tighter width for readability */
+  max-width: 900px;
   margin: 20px auto;
   padding: 30px;
   background: white;
@@ -299,9 +305,9 @@
 .input-label {
     display: block;
     font-weight: 700;
-    color: #888; /* Softer gray */
+    color: #888;
     margin-bottom: 4px;
-    font-size: 0.75rem; /* Smaller text */
+    font-size: 0.75rem; 
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -324,14 +330,13 @@
 }
 
 /* SPECIAL INPUT: TITLE */
-/* Looks like a header, edits like an input */
 .input-title {
     font-size: 1.8rem;
     font-weight: bold;
     color: #333;
     padding: 5px 0;
     border: none;
-    border-bottom: 2px solid #eee; /* Only bottom border */
+    border-bottom: 2px solid #eee;
     background: transparent;
     border-radius: 0;
     margin-bottom: 15px;
@@ -356,7 +361,7 @@
     resize: vertical;
 }
 
-/* META ROW (Category/Brand) */
+/* META ROW */
 .meta-row {
     display: flex;
     gap: 20px;
@@ -391,7 +396,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
 }
 
 .image-placeholder img {
@@ -418,30 +423,25 @@
     font-weight: bold;
 }
 
-/* CUSTOM FILE UPLOAD LINK */
+/* STANDARD FILE UPLOAD BUTTON */
 .file-upload-wrapper {
     text-align: center;
 }
 
-/* Hide the ugly standard input */
-input[type="file"] {
-    display: none;
-}
-
-/* Style the label to look like a link/button */
-.custom-file-upload {
-    display: inline-block;
-    cursor: pointer;
-    color: #0046be;
-    font-weight: bold;
+.standard-file-input {
+    display: block;
+    width: 100%;
     font-size: 0.9rem;
-    padding: 5px 10px;
+    padding: 8px;
+    border: 1px solid #ddd;
     border-radius: 4px;
+    background-color: #f9f9f9;
 }
 
-.custom-file-upload:hover {
-    background-color: #f0f6ff;
-    text-decoration: underline;
+.help-text {
+    margin-top: 5px;
+    font-size: 0.8rem;
+    color: #888;
 }
 
 /* DIVIDER */
@@ -474,7 +474,6 @@ input[type="file"] {
 }
 
 .action-buttons {
-    /* Aligns button to top right */
     display: flex;
     align-items: flex-start;
 }

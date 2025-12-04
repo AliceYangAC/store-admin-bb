@@ -17,7 +17,6 @@
 </template>
 
 <script>
-// ... (Script remains exactly the same as your previous version)
 import TopNav from './components/TopNav.vue';
 
 const productServiceUrl = "/products/";
@@ -50,23 +49,15 @@ export default {
     clearInterval(this.polling);
   },
   methods: {
-    resolveImageUrl(imagePath) {
-      console.log(`[ResolveImage] Input: ${imagePath}`);
-
-      if (!imagePath || imagePath === '/placeholder.png') return '/placeholder.png';
-      if (imagePath.startsWith('http')) return imagePath;
+    // REFACTORED: Constructs path based on ID. 
+    // Supports timestamp for instant refresh after upload.
+    resolveImageUrl(product) {
+      if (!product || !product.id) return '/placeholder.png';
       
-      const path = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-      const prefix = "/products"; 
-      const hasPrefix = path.startsWith(prefix);
-      console.log(`[ResolveImage] Normalized: ${path} | Has Prefix? ${hasPrefix}`);
-
-      if (hasPrefix) {
-        return path;
-      }
-
-      return `${prefix}${path}`;
+      const timestamp = product.lastImageUpdate || '';
+      return `${productServiceUrl}${product.id}/image?t=${timestamp}`;
     },
+
     async fetchOrders() {
       await fetch(`${makelineServiceUrl}order/fetch`)
       .then(response => response.json())
@@ -74,7 +65,6 @@ export default {
           if (incomingOrders) {
               this.orders = incomingOrders.map(newOrder => {
                   const existingOrder = this.orders.find(o => o.orderId === newOrder.orderId);
-
                   let duration = 0;
                   let shippedAt = null; 
 
@@ -86,28 +76,19 @@ export default {
                   if (duration === 0 && existingOrder && existingOrder.duration) {
                       duration = existingOrder.duration;
                   }
-                  // Calculate progress if order is shipped
                   if (duration > 0 && shippedAt) {
                       const totalDeliveryTimeMs = duration * 1000;
-                      
-                      // Calculate time passed since shipment started
                       const startTime = new Date(shippedAt).getTime();
                       const now = Date.now();
                       const timePassedMs = now - startTime;
 
-                      // If the shipment is still active
                       if (timePassedMs < totalDeliveryTimeMs) {
-                          newOrder.duration = duration; // Keep total duration in seconds for display
-                          
-                          // Calculate the percentage passed (0 to 100)
+                          newOrder.duration = duration;
                           const progressPercent = (timePassedMs / totalDeliveryTimeMs) * 100;
-                          
-                          // Store fields required for smooth animation start
                           newOrder.progressPercent = Math.min(progressPercent, 100);
                           newOrder.totalDurationMs = totalDeliveryTimeMs;
                           newOrder.remainingDurationMs = totalDeliveryTimeMs - timePassedMs;
                       } else {
-                          // Delivery should be complete if status hasn't updated yet
                           newOrder.progressPercent = 100;
                           newOrder.duration = 0;
                           newOrder.totalDurationMs = 0;
@@ -116,9 +97,8 @@ export default {
                   } else {
                       newOrder.duration = duration;
                       newOrder.progressPercent = 0;
-                      newOrder.totalDurationMs = duration * 1000; // Use if status is 2 but shippedAt is missing
+                      newOrder.totalDurationMs = duration * 1000;
                   }
-
                   return newOrder;
               });
           } else {
@@ -132,13 +112,13 @@ export default {
       if (!order) return;
 
       const payload = {
-        orderId: String(order.orderId), // Ensure ID is string for Go
+        orderId: String(order.orderId), 
         shipping: {
             postalCode: order.shipping.zip || order.shipping.postalCode || "K1A 0B1", 
             address1: order.shipping.address1,
             city: order.shipping.city
         },
-        status: 2 // Int for Go
+        status: 2 
       };
 
       await fetch(`${shippingServiceUrl}`, {
@@ -203,12 +183,12 @@ export default {
     },
     async getProduct(id) {
        fetch(`${singleProductServiceUrl}${id}`).then(r => r.json()).then(p => {
-         this.product = {...p, image: this.resolveImageUrl(p.image)};
+         this.product = p;
        });
     },
     async getProducts() {
        fetch(`${productServiceUrl}`).then(r => r.json()).then(p => {
-         this.products = p.map(x => ({...x, image: this.resolveImageUrl(x.image)}));
+         this.products = p;
        });
     }
   }
@@ -216,9 +196,10 @@ export default {
 </script>
 
 <style>
-/* ... (Keep your styles unchanged) ... */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
+
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Roboto', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;

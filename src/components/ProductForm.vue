@@ -52,11 +52,10 @@
         
         <div class="image-placeholder">
           <img 
-            v-if="product.image && product.image !== '/placeholder.png'" 
-            :src="resolveImageUrl(product.image)" 
+            :src="resolveImageUrl(product)" 
             alt="Product Preview" 
+            @error="handleImageError"
           />
-          <div v-else class="no-image">No Image Selected</div>
           
           <div v-if="isUploading" class="upload-overlay">Uploading...</div>
         </div>
@@ -65,7 +64,6 @@
             <input type="file" @change="uploadImage" accept="image/*" class="file-input" />
             <span class="file-instruction">Click to upload new image</span>
         </div>
-        <input type="hidden" v-model="product.image" />
       </div>
 
       <div class="info-column">
@@ -112,11 +110,11 @@
         product: {
           id: 0,
           name: '',
-          image: '/placeholder.png',
           description: '',
           price: 0.00,
           category: '',
-          brand: '' 
+          brand: '',
+          lastImageUpdate: Date.now() // Used to force refresh image
         },
         showValidationErrors: false,
         isUploading: false
@@ -137,9 +135,12 @@
       }
     },
     methods: {
+      handleImageError(e) {
+        // If image fails to load, use placeholder
+        e.target.src = "/placeholder.png";
+      },
       initForm() {
         const paramId = this.$route.params.id;
-
         if (paramId) {
             this.loadProductFromProps(paramId);
         } else {
@@ -148,36 +149,34 @@
       },
       resetForm() {
         this.product = {
-          id: 0,
-          name: '',
-          image: '/placeholder.png',
-          description: '',
-          price: 0.00,
-          category: '',
-          brand: '' 
+          id: 0, name: '', description: '', price: 0.00, category: '', brand: '',
+          lastImageUpdate: Date.now()
         };
         this.showValidationErrors = false;
         this.isUploading = false;
       },
       loadProductFromProps(paramId) {
-        // Safety check: ensure products exist
         if (!this.products || this.products.length === 0) return;
-
-        // Find the product
         const foundProduct = this.products.find(p => p.id == paramId);
-        
-        // If found, copy it to local data
         if (foundProduct) {
            this.product = Object.assign({}, foundProduct);
+           this.product.lastImageUpdate = Date.now();
         }
       },
       async uploadImage(event) {
         const file = event.target.files[0];
         if (!file) return;
 
+        // Must have an ID to associate image
+        if (!this.product.id) {
+            alert("Please save the product first before uploading an image.");
+            return;
+        }
+
         this.isUploading = true;
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('productId', this.product.id);
 
         try {
             const response = await fetch(`${productServiceUrl}upload`, {
@@ -186,8 +185,8 @@
             });
             
             if (response.ok) {
-                const data = await response.json();
-                this.product.image = data.image; 
+                // Update timestamp to force the <img> tag to refresh
+                this.product.lastImageUpdate = Date.now();
             } else {
                 alert('Failed to upload image');
             }
@@ -205,7 +204,6 @@
         }
 
         let method = 'PUT';
-        // We determine mode based on URL or ID
         if (!this.$route.params.id) {
           method = 'POST';
         }
@@ -220,26 +218,41 @@
           body: JSON.stringify(this.product)
         })
           .then(response => response.json())
-          .then(product => {
+          .then(savedProduct => {
             alert('Product saved successfully');           
+            
+            // Merge response (contains new ID if POST)
+            this.product = { ...this.product, ...savedProduct };
+
             if (method === 'PUT') {
               this.$emit('updateProductInList', this.product);
             } else {
-              this.$emit('addProductsToList', product);
+              this.$emit('addProductsToList', this.product);
             }
-            this.$router.push(`/product/${product.id}`);
+            this.$router.push(`/product/${this.product.id}`);
           })
           .catch(error => {
             console.log(error)
             alert('Error occurred while saving product')
           })
       }
+    },
+    computed: {
+      validationErrors() {
+        let errors = [];
+        if (!this.product.name) errors.push('Please enter a name');
+        if (!this.product.description) errors.push('Please enter a description');
+        if (this.product.price <= 0) errors.push('Price must be greater than 0');
+        if (!this.product.category) errors.push('Please enter a category');
+        if (!this.product.brand) errors.push('Please enter a brand');
+        return errors;
+      }
     }
   }
 </script>
 
 <style scoped>
-/* CONTAINER STYLES (Matches ProductDetail) */
+/* CONTAINER STYLES */
 .product-detail-container {
   text-align: left;
   max-width: 1000px;
@@ -304,7 +317,7 @@
     border: 1px solid #ccc;
     border-radius: 4px;
     font-family: inherit;
-    box-sizing: border-box; /* Ensures padding doesn't affect width */
+    box-sizing: border-box; 
     margin-bottom: 10px;
 }
 
@@ -313,7 +326,6 @@
     outline: none;
 }
 
-/* Specific Input Styles to match Detail View Typography */
 .input-title {
     font-size: 1.5rem;
     font-weight: bold;
@@ -370,11 +382,6 @@
   display: block;
 }
 
-.no-image {
-  color: #ccc;
-  font-weight: bold;
-}
-
 .upload-overlay {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -423,7 +430,6 @@
   background-color: #003da6;
 }
 
-/* RESPONSIVE */
 @media (max-width: 768px) {
   .product-content {
     flex-direction: column;

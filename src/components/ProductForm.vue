@@ -122,34 +122,51 @@
         isUploading: false
       }
     },
-    // --- THE FIX: Watch for data changes ---
     watch: {
       products: {
         immediate: true, 
-        handler(newProducts) {
-          // Whenever products update (or on load), try to find the match
-          this.loadProductFromProps();
+        handler() {
+          this.initForm();
+        }
+      },
+      '$route.params.id': {
+        immediate: true,
+        handler() {
+          this.initForm();
         }
       }
     },
-    mounted() {
-      // Also try on mount (in case data was already there)
-      this.loadProductFromProps();
-    },
     methods: {
-      loadProductFromProps() {
-        // 1. Check if we are in "Edit" mode (have an ID in URL)
+      initForm() {
         const paramId = this.$route.params.id;
-        if (!paramId) return;
 
-        // 2. Safety check: ensure products exist
+        if (paramId) {
+            this.loadProductFromProps(paramId);
+        } else {
+            this.resetForm();
+        }
+      },
+      resetForm() {
+        this.product = {
+          id: 0,
+          name: '',
+          image: '/placeholder.png',
+          description: '',
+          price: 0.00,
+          category: '',
+          brand: '' 
+        };
+        this.showValidationErrors = false;
+        this.isUploading = false;
+      },
+      loadProductFromProps(paramId) {
+        // Safety check: ensure products exist
         if (!this.products || this.products.length === 0) return;
 
-        // 3. Find the product
-        // Use loose equality (==) to match string param to number ID
+        // Find the product
         const foundProduct = this.products.find(p => p.id == paramId);
         
-        // 4. If found, copy it to local data
+        // If found, copy it to local data
         if (foundProduct) {
            this.product = Object.assign({}, foundProduct);
         }
@@ -188,8 +205,8 @@
         }
 
         let method = 'PUT';
-        let path = this.$route.path;
-        if (path.includes('add')) {
+        // We determine mode based on URL or ID
+        if (!this.$route.params.id) {
           method = 'POST';
         }
 

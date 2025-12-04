@@ -54,10 +54,16 @@ export default {
       if (!imagePath || imagePath === '/placeholder.png') return '/placeholder.png';
       if (imagePath.startsWith('http')) return imagePath;
 
-      let baseUrl = productServiceUrl; 
+      let baseUrl = productServiceUrl;
+      
       if (baseUrl.endsWith('/') && imagePath.startsWith('/')) {
         baseUrl = baseUrl.slice(0, -1);
       }
+
+      if (imagePath.startsWith(baseUrl)) {
+        return imagePath;
+      }
+
       return `${baseUrl}${imagePath}`;
     },
     async fetchOrders() {

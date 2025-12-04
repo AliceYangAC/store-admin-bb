@@ -222,7 +222,7 @@
         })
           .then(response => response.json())
           .then(savedProduct => {
-            alert('Product saved successfully');           
+            alert('Product saved successfully');            
             
             this.product = { ...this.product, ...savedProduct };
 
@@ -304,6 +304,7 @@
     font-size: 0.75rem; 
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    white-space: nowrap; /* Added to force single line */
 }
 
 .form-input {
@@ -373,6 +374,7 @@
 
 .image-column {
   flex: 0 0 300px;
+  /* Inherits text-align: left from container */
 }
 
 .info-column {
@@ -419,7 +421,7 @@
 
 /* STANDARD FILE UPLOAD BUTTON */
 .file-upload-wrapper {
-    text-align: center;
+    text-align: left; /* Changed from center to left */
 }
 
 .standard-file-input {
@@ -453,18 +455,16 @@
   cursor: pointer;
   font-weight: bold;
   font-size: 1rem;
-  transition: background-color 0.2s; /* Simplified transition */
+  transition: background-color 0.2s; 
 }
 
 .save-btn {
   background-color: #0046be; 
   color: white; 
-  /* Removed box-shadow */
 }
 
 .save-btn:hover {
   background-color: #003da6;
-  /* Removed transform */
 }
 
 .action-buttons {

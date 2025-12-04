@@ -53,18 +53,15 @@ export default {
     resolveImageUrl(imagePath) {
       if (!imagePath || imagePath === '/placeholder.png') return '/placeholder.png';
       if (imagePath.startsWith('http')) return imagePath;
-
-      let baseUrl = productServiceUrl;
+      const path = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
       
-      if (baseUrl.endsWith('/') && imagePath.startsWith('/')) {
-        baseUrl = baseUrl.slice(0, -1);
+      const prefix = '/products';
+
+      if (path.startsWith(prefix)) {
+        return path;
       }
 
-      if (imagePath.startsWith(baseUrl)) {
-        return imagePath;
-      }
-
-      return `${baseUrl}${imagePath}`;
+      return `${prefix}${path}`;
     },
     async fetchOrders() {
       // ... (Rest of your existing methods) ...

@@ -14,6 +14,8 @@
         <router-link :to="`/product/${this.$route.params.id}/edit`">
           <button class="btn edit-btn">Edit Product</button>
         </router-link>
+        
+        <button class="btn delete-btn" @click="deleteProduct">Delete Product</button>
       </div>
     </div>
 
@@ -56,8 +58,8 @@
 <script>
   export default {
     name: 'ProductDetail',
-    // Accepts resolveImageUrl from App.vue
     props: ['products', 'resolveImageUrl'],
+    emits: ['deleteProduct'],
     computed: {
       product() {
         return this.products.find(product => product.id == this.$route.params.id)
@@ -69,13 +71,15 @@
     methods: {
       handleImageError(e) {
         e.target.src = '/placeholder.png';
+      },
+      deleteProduct() {
+        this.$emit('deleteProduct', this.product.id);
       }
     }
   }
 </script>
 
 <style scoped>
-/* (Your CSS remains exactly the same as provided) */
 .product-detail-container {
   text-align: left;
   max-width: 1000px;
@@ -191,11 +195,24 @@
   background-color: #e6f0ff; 
   color: #0046be; 
   border-color: #0046be; 
+  margin-right: 10px; /* Spacing between Edit and Delete */
 }
 
 .edit-btn:hover {
   background-color: #0046be; 
   color: white; 
+}
+
+/* NEW DELETE BUTTON STYLES */
+.delete-btn {
+  background-color: #fff0f0;
+  color: #d93025;
+  border-color: #d93025;
+}
+
+.delete-btn:hover {
+  background-color: #d93025;
+  color: white;
 }
 
 a {

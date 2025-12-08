@@ -13,6 +13,7 @@
     @cancelOrder="cancelOrder"
     @shipOrder="shipOrder"
     @updateOrder="updateOrder"
+    @deleteProduct="deleteProduct"
   ></router-view>
 </template>
 
@@ -136,7 +137,6 @@ export default {
       })
       .catch(err => console.error("Shipping Error:", err));
     },
-
     async completeOrder(orderId) {
       await this.updateOrderStatus(orderId, 1);
       alert('Order processed successfully');
@@ -152,7 +152,6 @@ export default {
          }
       });
     },
-
     async updateOrder({ orderId, items }) {
       let order = this.orders.find(o => o.orderId === orderId);
       if (!order) return;
@@ -163,7 +162,6 @@ export default {
         body: JSON.stringify(order)
       });
     },
-
     async updateOrderStatus(orderId, status) {
       let order = this.orders.find(o => o.orderId === orderId);
       if (!order) return;
@@ -190,6 +188,24 @@ export default {
        fetch(`${productServiceUrl}`).then(r => r.json()).then(p => {
          this.products = p;
        });
+    },
+    async deleteProduct(productId) {
+      if (!confirm("Are you sure you want to delete this product? This cannot be undone.")) {
+        return;
+      }
+      await fetch(`${singleProductServiceUrl}${productId}`, {
+        method: 'DELETE'
+      })
+      .then(res => {
+        if (res.ok) {
+          this.products = this.products.filter(p => p.id !== productId);
+          alert("Product deleted successfully");
+          this.$router.push('/'); 
+        } else {
+          alert("Failed to delete product");
+        }
+      })
+      .catch(err => console.error("Delete Error:", err));
     }
   }
 }

@@ -272,6 +272,12 @@ button:hover {
   background-color: #005f8b;
 }
 
+button:active {
+  background-color: #003691; 
+  transform: translateY(1px);
+}
+
+
 .action-button {
   float: right;
 }

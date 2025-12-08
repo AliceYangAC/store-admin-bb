@@ -56,11 +56,11 @@
         <label class="input-label">Product Image</label>
         
         <div class="image-placeholder">
-          <img 
-            :src="resolveImageUrl(product)" 
-            alt="Product Preview" 
-            @error="handleImageError"
-          />
+        <img 
+          :src="localPreviewUrl || resolveImageUrl(product)" 
+          alt="Product Preview" 
+          @error="handleImageError"
+        />
           
           <div v-if="isUploading" class="upload-overlay">Uploading...</div>
         </div>
@@ -122,6 +122,10 @@
           brand: '',
           lastImageUpdate: Date.now()
         },
+        // NEW: State for deferred uploads
+        pendingImageFile: null,
+        localPreviewUrl: null,
+        
         showValidationErrors: false,
         isUploading: false
       }
@@ -155,6 +159,8 @@
           description: '', price: 0.00, category: '', brand: '',
           lastImageUpdate: Date.now()
         };
+        this.pendingImageFile = null;
+        this.localPreviewUrl = null;
         this.showValidationErrors = false;
         this.isUploading = false;
       },
@@ -164,22 +170,32 @@
         if (foundProduct) {
            this.product = Object.assign({}, foundProduct);
            this.product.lastImageUpdate = Date.now();
+           this.pendingImageFile = null;
+           this.localPreviewUrl = null;
         }
       },
       async uploadImage(event) {
         const file = event.target.files[0];
         if (!file) return;
 
+        // Product does not exist yet (New Product)
         if (!this.product.id) {
-            alert("Please save the product first before uploading an image.");
-            event.target.value = ''; 
+            this.pendingImageFile = file;
+            // Create a temporary local URL for preview
+            this.localPreviewUrl = URL.createObjectURL(file);
             return;
         }
 
+        // Product exists, upload immediately (Existing behavior)
+        await this.performBackendUpload(file, this.product.id);
+      },
+
+      // Extracted the actual API call logic to be reusable
+      async performBackendUpload(file, productId) {
         this.isUploading = true;
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('productId', this.product.id);
+        formData.append('productId', productId);
 
         try {
             const response = await fetch(`${productServiceUrl}upload`, {
@@ -188,8 +204,9 @@
             });
             
             if (response.ok) {
-                // Force image refresh via timestamp
                 this.product.lastImageUpdate = Date.now();
+                this.pendingImageFile = null;
+                this.localPreviewUrl = null;
             } else {
                 alert('Failed to upload image');
             }
@@ -200,6 +217,8 @@
             this.isUploading = false;
         }
       },
+
+      // Save Logic checks for pending image
       saveProduct() {
         if (this.validationErrors.length > 0) {
           this.showValidationErrors = true;
@@ -215,13 +234,18 @@
 
         fetch(`${productServiceUrl}`, {
           method: method,
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(this.product)
         })
           .then(response => response.json())
-          .then(savedProduct => {
+          .then(async savedProduct => {
+            
+            // Check if we have a deferred image waiting to be uploaded
+            if (this.pendingImageFile) {
+                // Upload using the new id we just got from the save
+                await this.performBackendUpload(this.pendingImageFile, savedProduct.id);
+            }
+
             alert('Product saved successfully');            
             
             this.product = { ...this.product, ...savedProduct };
@@ -231,7 +255,7 @@
             } else {
               this.$emit('addProductsToList', this.product);
             }
-            this.$router.push(`/product/${this.product.id}`);
+            this.$router.push(`${productServiceUrl}${this.product.id}`);
           })
           .catch(error => {
             console.log(error)

@@ -26,7 +26,11 @@
               </router-link>
             </td>
             <td><strong>{{ product.name }}</strong></td>
-            <td class="text-left description-cell">{{ product.description }}</td>
+            
+            <td class="text-left description-cell" :title="product.description">
+              {{ truncateDescription(product.description) }}
+            </td>
+
             <td class="price-cell">${{ product.price }}</td>
           </tr>
           
@@ -46,6 +50,17 @@
     props: ['products'],
     mounted() {
       this.$emit('getProducts')
+    },
+    methods: {
+      // NEW METHOD: Truncates text if it exceeds 60 characters
+      truncateDescription(text) {
+        if (!text) return '';
+        const limit = 60; // You can change this number
+        if (text.length > limit) {
+          return text.substring(0, limit) + '...';
+        }
+        return text;
+      }
     }
   }
 </script>
@@ -101,6 +116,8 @@
 table {
   width: 100%;
   border-collapse: collapse;
+  /* Optional: keeps columns consistent even with short/long text */
+  table-layout: fixed; 
 }
 
 th {
@@ -133,7 +150,8 @@ td {
 }
 
 .description-cell {
-  max-width: 300px;
+  /* No longer need max-width to force wrap, handled by JS now */
+  width: 40%; /* Give description column more space */
   color: #666;
   font-size: 0.95rem;
 }

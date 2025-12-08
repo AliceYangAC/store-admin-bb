@@ -69,9 +69,11 @@
       }
     },
     methods: {
+      // Sets image to placeholder on error
       handleImageError(e) {
         e.target.src = '/placeholder.png';
       },
+      // Emits event to delete product
       deleteProduct() {
         this.$emit('deleteProduct', this.product.id);
       }
@@ -195,7 +197,7 @@
   background-color: #e6f0ff; 
   color: #0046be; 
   border-color: #0046be; 
-  margin-right: 10px; /* Spacing between Edit and Delete */
+  margin-right: 10px; 
 }
 
 .edit-btn:hover {
@@ -203,7 +205,6 @@
   color: white; 
 }
 
-/* NEW DELETE BUTTON STYLES */
 .delete-btn {
   background-color: #fff0f0;
   color: #d93025;

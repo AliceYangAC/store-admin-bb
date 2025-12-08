@@ -52,10 +52,10 @@
       this.$emit('getProducts')
     },
     methods: {
-      // NEW METHOD: Truncates text if it exceeds 60 characters
+      // Truncates text if it exceeds 60 characters
       truncateDescription(text) {
         if (!text) return '';
-        const limit = 60; // You can change this number
+        const limit = 60; 
         if (text.length > limit) {
           return text.substring(0, limit) + '...';
         }
@@ -66,7 +66,6 @@
 </script>
 
 <style scoped>
-/* CONTAINER STYLING (Matches OrderList) */
 .product-list-container {
   max-width: 1000px;
   margin: 20px auto;
@@ -76,7 +75,6 @@
   overflow: hidden;
 }
 
-/* HEADER SECTION */
 .list-header {
   display: flex;
   justify-content: space-between;
@@ -92,9 +90,8 @@
   color: #444;
 }
 
-/* BUTTON STYLING */
 .btn-main {
-  background-color: #0046be; /* Brand Blue */
+  background-color: #0046be; 
   color: white;
   border: none;
   padding: 8px 16px;
@@ -108,7 +105,6 @@
   background-color: #003396;
 }
 
-/* TABLE STYLING */
 .table-wrapper {
   padding: 0;
 }
@@ -116,7 +112,6 @@
 table {
   width: 100%;
   border-collapse: collapse;
-  /* Optional: keeps columns consistent even with short/long text */
   table-layout: fixed; 
 }
 
@@ -144,14 +139,12 @@ td {
   background-color: #f9f9f9;
 }
 
-/* SPECIFIC COLUMN ALIGNMENTS */
 .text-left {
   text-align: left;
 }
 
 .description-cell {
-  /* No longer need max-width to force wrap, handled by JS now */
-  width: 40%; /* Give description column more space */
+  width: 40%; 
   color: #666;
   font-size: 0.95rem;
 }

@@ -30,11 +30,10 @@ export default {
     progressPercent: {
       immediate: true,
       handler(newVal) {
-        // THE LATCH:
-        // 1. If we already have a frozenPercent, do nothing (Prevents Jitter)
+        // If we already have a frozenPercent, do nothing (Prevents Jitter)
         if (this.frozenPercent !== null) return;
 
-        // 2. If the new value is valid, lock it in (Fixes the Reset/0% issue)
+        // If the new value is valid, lock it in (Fixes the Reset/0% issue)
         // We check for undefined/null to ensure we don't snapshot an empty state.
         if (newVal !== undefined && newVal !== null) {
           this.frozenPercent = newVal;
@@ -60,7 +59,6 @@ export default {
 </script>
 
 <style scoped>
-/* Move the progress-track styles here */
 .progress-track {
   position: relative;
   width: 100%;
@@ -77,7 +75,7 @@ export default {
   height: 100%;
   background-color: #ffe007;
   border-radius: 3px;
-  width: 0%; /* Controlled by keyframe */
+  width: 0%;
   animation-name: drive-progress;
   animation-timing-function: linear;
   animation-fill-mode: forwards;
@@ -86,7 +84,7 @@ export default {
 .car-icon {
   position: absolute;
   top: -14px;
-  left: 0%; /* Controlled by keyframe */
+  left: 0%;
   animation-name: drive-car;
   animation-timing-function: linear;
   animation-fill-mode: forwards;

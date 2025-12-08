@@ -83,7 +83,6 @@
   export default {
     name: 'OrderDetail',
     props: ['orders', 'products'],
-    // Declare all events this component can trigger
     emits: ['completeOrder', 'shipOrder', 'cancelOrder', 'updateOrder'],
     data() {
       return {
@@ -99,6 +98,7 @@
       this.getOrder()
     },
     methods: {
+      // Fetches order details based on route param
       getOrder() {
         this.order = this.orders.find(order => order.orderId === this.$route.params.id);
         
@@ -116,13 +116,13 @@
             .catch(error => console.error(error));
         }
       },
-      
+      // Looks up product name by ID
       productLookup(id) {
         if (!this.products || this.products.length === 0) return 'Loading...';
         const p = this.products.find(product => product.id === id);
         return p ? p.name : 'Unknown Product';
       },
-      
+      // Calculates total amount for the order
       orderTotal() {
         if (!this.order || !this.order.items) return '0.00';
         let total = 0;
@@ -131,46 +131,45 @@
         });
         return total.toFixed(2);
       },
-
+      // Returns human-readable status text
       getStatusText(status) {
         const statusMap = { 0: 'Ordered', 1: 'Processing', 2: 'Shipped', 3: 'Delivered' };
         return statusMap[status] || 'Unknown';
       },
-
+      // Returns CSS class for status
       getStatusClass(status) {
         const map = { 0: 'status-pending', 1: 'status-processing', 2: 'status-shipped', 3: 'status-delivered' };
         return map[status] || '';
       },
+      // Emits event to complete order
       completeOrder() {
         this.$emit('completeOrder', this.order.orderId);
         if (this.$route.path !== '/') this.$router.push('/');
       },
-
+      // Emits event to ship order
       shipOrder() {
         this.$emit('shipOrder', this.order.orderId);
         if (this.$route.path !== '/') this.$router.push('/');
       },
-
+      // Emits event to cancel order
       cancelOrder() {
         if(confirm("Are you sure you want to cancel this order?")) {
           this.$emit('cancelOrder', this.order.orderId);
           if (this.$route.path !== '/') this.$router.push('/');
         }
       },
-
+      // Deletes an item from the order
       deleteItem(index) {
         // Create a copy of items
         const updatedItems = [...this.order.items];
         updatedItems.splice(index, 1);
         
         if (updatedItems.length === 0) {
-            this.cancelOrder(); // If empty, just cancel
+            this.cancelOrder(); 
             return;
         }
-
         // Emit event to update backend
         this.$emit('updateOrder', { orderId: this.order.orderId, items: updatedItems });
-        
         // Update local view immediately
         this.order.items = updatedItems;
       }
@@ -213,7 +212,6 @@ a {
   gap: 10px;
 }
 
-/* Button Styles */
 .btn {
   padding: 10px 20px;
   border: none;
@@ -251,7 +249,6 @@ a {
 }
 .delete-btn:hover { background-color: #ffbbbb; }
 
-/* Status Colors */
 .status-pending { color: #cc0000; font-weight: bold; }
 .status-processing { color: #e6b800; font-weight: bold; }
 .status-shipped { color: #008000; font-weight: bold; }

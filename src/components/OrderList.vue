@@ -123,12 +123,15 @@ import ShippingProgress from './ShippingProgress.vue';
       }
     },
     methods: {
+      // Fetches orders from parent component
       fetchOrders() {
         this.$emit('fetchOrders')
       },
+      // Returns count of orders for a given status
       getCountForStatus(status) {
         return this.orders.filter(o => o.status === parseInt(status)).length;
       },
+      // Calculates total amount for an order
       orderTotal(order) {
         let total = 0;
         if (order.items) {
@@ -138,12 +141,14 @@ import ShippingProgress from './ShippingProgress.vue';
         }
         return total.toFixed(2);
       },
+      // Looks up product name by ID
       productLookup(id) {
         // Safety check if products list isn't loaded yet
         if (!this.products || this.products.length === 0) return 'Loading...';
         const p = this.products.find(product => product.id === id);
         return p ? p.name : 'Unknown Product';
       },
+      // Toggles the details view for an order
       toggleDetails(id) {
         if (this.expandedOrderId === id) {
           this.expandedOrderId = null;
@@ -151,19 +156,21 @@ import ShippingProgress from './ShippingProgress.vue';
           this.expandedOrderId = id;
         }
       },
-      
-      // --- ACTIONS ---
+      // Emits event to complete order
       completeOrder(id) {
         this.$emit('completeOrder', id);
       },
+      // Emits event to ship order
       shipOrder(id) {
         this.$emit('shipOrder', id);
       },
+      // Emits event to cancel order
       cancelOrder(id) {
         if(confirm(`Are you sure you want to cancel Order #${id}?`)) {
           this.$emit('cancelOrder', id);
         }
       },
+      // Emits event to refund order (not used currently)
       refundOrder(id) {
         const reason = prompt("Please enter a reason for the refund:");
         if (reason) {
@@ -299,13 +306,12 @@ td {
 
 .status-done { color: #888; font-style: italic; }
 
-/* EXPANDED DETAILS STYLING */
 .details-row {
   background-color: #fcfcfc;
 }
 
 .details-content {
-  padding: 10px 20px 20px 50px; /* Indent to align with text */
+  padding: 10px 20px 20px 50px; 
   text-align: left;
   color: #555;
 }
@@ -352,7 +358,7 @@ a {
 }
 
 .arrow {
-  color: #0046be; /* Brand blue */
+  color: #0046be;
   font-size: 0.9rem;
   padding: 0 4px;
 }
@@ -361,7 +367,7 @@ a {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 65px; /* Truncate very long city names */
+  max-width: 65px;
   text-align: right;
 }
 </style>

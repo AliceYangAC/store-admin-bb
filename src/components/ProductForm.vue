@@ -28,7 +28,11 @@
                   class="form-input" 
                   placeholder="e.g. Computers" 
                   v-model="product.category" 
+                  list="category-options"
                 />
+                <datalist id="category-options">
+                  <option v-for="cat in uniqueCategories" :key="cat" :value="cat"></option>
+                </datalist>
             </div>
             <div class="half-width">
                 <label class="input-label">Brand</label>
@@ -36,7 +40,11 @@
                   class="form-input" 
                   placeholder="e.g. Sony" 
                   v-model="product.brand" 
+                  list="brand-options"
                 />
+                <datalist id="brand-options">
+                  <option v-for="brand in uniqueBrands" :key="brand" :value="brand"></option>
+                </datalist>
             </div>
         </div>
       </div>
@@ -122,10 +130,8 @@
           brand: '',
           lastImageUpdate: Date.now()
         },
-        // NEW: State for deferred uploads
         pendingImageFile: null,
         localPreviewUrl: null,
-        
         showValidationErrors: false,
         isUploading: false
       }
@@ -140,10 +146,34 @@
         handler() { this.initForm(); }
       }
     },
+    computed: {
+      validationErrors() {
+        let errors = [];
+        if (!this.product.name) errors.push('Please enter a name');
+        if (!this.product.description) errors.push('Please enter a description');
+        if (this.product.price <= 0) errors.push('Price must be greater than 0');
+        if (!this.product.category) errors.push('Please enter a category');
+        if (!this.product.brand) errors.push('Please enter a brand');
+        return errors;
+      },
+      uniqueCategories() {
+        if (!this.products) return [];
+        // Extract categories, remove duplicates using Set, and sort alphabetically
+        const categories = this.products.map(p => p.category).filter(c => c && c.trim() !== '');
+        return [...new Set(categories)].sort();
+      },
+      uniqueBrands() {
+        if (!this.products) return [];
+        const brands = this.products.map(p => p.brand).filter(b => b && b.trim() !== '');
+        return [...new Set(brands)].sort();
+      }
+    },
     methods: {
+      // Sets image to placeholder on error
       handleImageError(e) {
         e.target.src = "/placeholder.png";
       },
+      // Initializes form based on route param ID
       initForm() {
         const paramId = this.$route.params.id;
         if (paramId) {
@@ -152,6 +182,7 @@
             this.resetForm();
         }
       },
+      // Resets form to default state
       resetForm() {
         this.product = {
           id: 0, name: '', 
@@ -164,6 +195,7 @@
         this.showValidationErrors = false;
         this.isUploading = false;
       },
+      // Loads product data from props based on ID
       loadProductFromProps(paramId) {
         if (!this.products || this.products.length === 0) return;
         const foundProduct = this.products.find(p => p.id == paramId);
@@ -174,23 +206,20 @@
            this.localPreviewUrl = null;
         }
       },
+      // Handles image upload and preview
       async uploadImage(event) {
         const file = event.target.files[0];
         if (!file) return;
 
-        // Product does not exist yet (New Product)
         if (!this.product.id) {
             this.pendingImageFile = file;
-            // Create a temporary local URL for preview
             this.localPreviewUrl = URL.createObjectURL(file);
             return;
         }
 
-        // Product exists, upload immediately (Existing behavior)
         await this.performBackendUpload(file, this.product.id);
       },
-
-      // Extracted the actual API call logic to be reusable
+      // Performs backend upload of image file
       async performBackendUpload(file, productId) {
         this.isUploading = true;
         const formData = new FormData();
@@ -217,8 +246,7 @@
             this.isUploading = false;
         }
       },
-
-      // Save Logic checks for pending image
+      // Saves product (create or update)
       saveProduct() {
         if (this.validationErrors.length > 0) {
           this.showValidationErrors = true;
@@ -240,9 +268,7 @@
           .then(response => response.json())
           .then(async savedProduct => {
             
-            // Check if we have a deferred image waiting to be uploaded
             if (this.pendingImageFile) {
-                // Upload using the new id we just got from the save
                 await this.performBackendUpload(this.pendingImageFile, savedProduct.id);
             }
 
@@ -262,23 +288,11 @@
             alert('Error occurred while saving product')
           })
       }
-    },
-    computed: {
-      validationErrors() {
-        let errors = [];
-        if (!this.product.name) errors.push('Please enter a name');
-        if (!this.product.description) errors.push('Please enter a description');
-        if (this.product.price <= 0) errors.push('Price must be greater than 0');
-        if (!this.product.category) errors.push('Please enter a category');
-        if (!this.product.brand) errors.push('Please enter a brand');
-        return errors;
-      }
     }
   }
 </script>
 
 <style scoped>
-/* CONTAINER STYLES */
 .product-detail-container {
   text-align: left;
   max-width: 900px;
@@ -289,7 +303,6 @@
   box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 
-/* ERROR BANNER */
 .error-banner {
     background-color: #fff0f0;
     border-left: 4px solid #cc0000;
@@ -303,7 +316,6 @@
     padding: 0;
 }
 
-/* HEADER SECTION */
 .header-actions {
   display: flex;
   justify-content: space-between;
@@ -315,7 +327,6 @@
     flex: 1;
 }
 
-/* INPUT STYLING - GENERAL */
 .input-group {
     margin-bottom: 15px;
 }
@@ -328,7 +339,7 @@
     font-size: 0.75rem; 
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    white-space: nowrap; /* Added to force single line */
+    white-space: nowrap; 
 }
 
 .form-input {
@@ -348,7 +359,6 @@
     background-color: #f9fbff;
 }
 
-/* SPECIAL INPUT: TITLE */
 .input-title {
     font-size: 1.8rem;
     font-weight: bold;
@@ -365,7 +375,6 @@
     border-bottom-color: #0046be;
 }
 
-/* SPECIAL INPUT: PRICE */
 .input-price {
     font-size: 1.4rem;
     font-weight: bold;
@@ -373,14 +382,12 @@
     width: 150px;
 }
 
-/* DESCRIPTION */
 .description-input {
     line-height: 1.6;
     color: #444;
     resize: vertical;
 }
 
-/* META ROW */
 .meta-row {
     display: flex;
     gap: 20px;
@@ -390,7 +397,6 @@
     flex: 1;
 }
 
-/* IMAGE SECTION */
 .product-content {
   display: flex;
   gap: 40px;
@@ -398,7 +404,6 @@
 
 .image-column {
   flex: 0 0 300px;
-  /* Inherits text-align: left from container */
 }
 
 .info-column {
@@ -443,9 +448,8 @@
     font-weight: bold;
 }
 
-/* STANDARD FILE UPLOAD BUTTON */
 .file-upload-wrapper {
-    text-align: left; /* Changed from center to left */
+    text-align: left; 
 }
 
 .standard-file-input {
@@ -464,14 +468,12 @@
     color: #888;
 }
 
-/* DIVIDER */
 .divider {
     border: 0;
     border-top: 1px solid #eee;
     margin: 30px 0;
 }
 
-/* SAVE BUTTON (Updated) */
 .btn {
   padding: 10px 25px;
   border: none;
@@ -496,7 +498,6 @@
     align-items: flex-start;
 }
 
-/* RESPONSIVE */
 @media (max-width: 768px) {
   .product-content {
     flex-direction: column;

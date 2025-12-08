@@ -13,6 +13,7 @@
     @cancelOrder="cancelOrder"
     @shipOrder="shipOrder"
     @updateOrder="updateOrder"
+    @deleteProduct="deleteProduct"
   ></router-view>
 </template>
 
@@ -49,15 +50,14 @@ export default {
     clearInterval(this.polling);
   },
   methods: {
-    // REFACTORED: Constructs path based on ID. 
-    // Supports timestamp for instant refresh after upload.
+    // Constructs image URL with timestamp (for cache busting in future)
     resolveImageUrl(product) {
       if (!product || !product.id) return '/placeholder.png';
       
       const timestamp = product.lastImageUpdate || '';
       return `${productServiceUrl}${product.id}/image?t=${timestamp}`;
     },
-
+    // Fetches orders from backend and updates local list
     async fetchOrders() {
       await fetch(`${makelineServiceUrl}order/fetch`)
       .then(response => response.json())
@@ -107,6 +107,7 @@ export default {
       })
       .catch(error => console.error(error));
     },
+    // Sends shipping request to shipping service and updates order status
     async shipOrder(orderId) {
       let order = this.orders.find(o => o.orderId === orderId);
       if (!order) return;
@@ -120,7 +121,6 @@ export default {
         },
         status: 2 
       };
-
       await fetch(`${shippingServiceUrl}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -136,12 +136,12 @@ export default {
       })
       .catch(err => console.error("Shipping Error:", err));
     },
-
+    // Updates order status to 'Processing'
     async completeOrder(orderId) {
       await this.updateOrderStatus(orderId, 1);
       alert('Order processed successfully');
     },
-
+    // Cancels order by deleting it from backend
     async cancelOrder(orderId) {
       await fetch(`${makelineServiceUrl}order/${orderId}`, { method: 'DELETE' })
       .then(res => {
@@ -152,7 +152,7 @@ export default {
          }
       });
     },
-
+    // Updates order items in backend
     async updateOrder({ orderId, items }) {
       let order = this.orders.find(o => o.orderId === orderId);
       if (!order) return;
@@ -163,7 +163,7 @@ export default {
         body: JSON.stringify(order)
       });
     },
-
+    // Updates order status in backend
     async updateOrderStatus(orderId, status) {
       let order = this.orders.find(o => o.orderId === orderId);
       if (!order) return;
@@ -176,20 +176,43 @@ export default {
         if(res.ok) order.status = status;
       });
     },
+    // Adds new product to local list
     async addProductsToList(newProduct) { this.products.push(newProduct); },
+    // Updates existing product in local list
     async updateProductInList(updatedProduct) {
        const index = this.products.findIndex(p => p.id === updatedProduct.id);
        if (index !== -1) this.products[index] = updatedProduct;
     },
+    // Fetches a single product by ID
     async getProduct(id) {
        fetch(`${singleProductServiceUrl}${id}`).then(r => r.json()).then(p => {
          this.product = p;
        });
     },
+    // Fetches all products
     async getProducts() {
        fetch(`${productServiceUrl}`).then(r => r.json()).then(p => {
          this.products = p;
        });
+    },
+    // Deletes a product by ID
+    async deleteProduct(productId) {
+      if (!confirm("Are you sure you want to delete this product? This cannot be undone.")) {
+        return;
+      }
+      await fetch(`${singleProductServiceUrl}${productId}`, {
+        method: 'DELETE'
+      })
+      .then(res => {
+        if (res.ok) {
+          this.products = this.products.filter(p => p.id !== productId);
+          alert("Product deleted successfully");
+          this.$router.push('/'); 
+        } else {
+          alert("Failed to delete product");
+        }
+      })
+      .catch(err => console.error("Delete Error:", err));
     }
   }
 }
